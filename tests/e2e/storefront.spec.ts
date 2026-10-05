@@ -7,6 +7,21 @@ test("premium hero uses supplied branding and remains responsive", async ({ page
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Gifts that create");
   await expect(page.locator(".site-header .brand-monogram")).toBeVisible();
   await expect(page.locator(".site-header .brand-wordmark")).toBeVisible();
+  for (const area of [".site-header", ".site-footer"]) {
+    const logo = page.locator(`${area} .brand-logo`);
+    await expect(logo).toHaveAccessibleName("RUVAANI Creations & Packaging home");
+    await expect(logo.locator(".brand-wordmark")).toHaveAttribute("alt", "RUVAANI");
+    await expect(logo.locator(".brand-wordmark")).toHaveAttribute("src", /ruvaani-wordmark/);
+    await expect(logo.locator(".brand-tagline")).toHaveText("Creations & Packaging");
+    const monogram = await logo.locator(".brand-monogram").boundingBox();
+    const wordmark = await logo.locator(".brand-wordmark").boundingBox();
+    const tagline = await logo.locator(".brand-tagline").boundingBox();
+    expect(monogram).not.toBeNull();
+    expect(wordmark).not.toBeNull();
+    expect(tagline).not.toBeNull();
+    expect(monogram!.x + monogram!.width).toBeLessThan(wordmark!.x);
+    expect(tagline!.y).toBeGreaterThanOrEqual(wordmark!.y + wordmark!.height);
+  }
   await expect(page.locator(".hero-photo")).toBeVisible();
   expect(await page.locator(".button-primary").first().evaluate((element) => getComputedStyle(element).backgroundColor)).toBe("rgb(6, 76, 60)");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -16,12 +31,30 @@ test("premium hero uses supplied branding and remains responsive", async ({ page
   });
   await page.locator(".site-footer").scrollIntoViewIfNeeded();
   await expect(page.locator(".site-footer")).toBeInViewport();
+  await page.locator(".site-footer .brand-logo").screenshot({ path: `test-results/logo-footer-${info.project.name}.png`, scale: "css" });
   await page.screenshot({ path: `test-results/footer-${info.project.name}.png`, scale: "css" });
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+  await page.locator(".site-header .brand-logo").screenshot({ path: `test-results/logo-header-${info.project.name}.png`, scale: "css" });
   await page.screenshot({ path: `test-results/home-${info.project.name}.png`, fullPage: true, scale: "css" });
   await page.getByRole("link", { name: "Explore the collection", exact: true }).first().click();
   await expect(page).toHaveURL(/\/shop/);
   expect(errors).toEqual([]);
+});
+
+test("corrected logo stays clear of the menu and actions on narrow phones", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.goto("/");
+  const header = page.locator(".site-header");
+  await expect(header.locator(".brand-tagline")).toBeVisible();
+  const menu = await header.getByRole("button", { name: "Open menu" }).boundingBox();
+  const logo = await header.locator(".brand-logo").boundingBox();
+  const actions = await header.locator(".header-actions").boundingBox();
+  expect(menu).not.toBeNull();
+  expect(logo).not.toBeNull();
+  expect(actions).not.toBeNull();
+  expect(menu!.x + menu!.width).toBeLessThanOrEqual(logo!.x);
+  expect(logo!.x + logo!.width).toBeLessThanOrEqual(actions!.x);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
 test("catalogue filters, search, pagination and quick view use supplied entries", async ({ page }, info) => {

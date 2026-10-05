@@ -31,7 +31,10 @@ hamper imagery.
 - The remaining 16 entries have **no invented prices, stock, weights or capacities**.
   Presentation options are not represented as automatically included products.
 - This is a partial catalogue, not a claim that the full range has been supplied.
-- Brand imagery is cropped from the supplied logo. Product images are cropped
+- The horizontal logo uses the supplied RV monogram on the left, the corrected
+  **RUVAANI** wordmark (two A's) from the updated reference on the right, and
+  **Creations & Packaging** beneath the name in the header and footer.
+  Product images are cropped
   from the supplied PDF/sheets and optimized as local WebP files; no third-party
   image-generation or document-processing service is used.
 - All three owner-approved contact numbers are shown as telephone links.
