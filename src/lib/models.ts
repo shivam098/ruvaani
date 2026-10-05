@@ -83,26 +83,30 @@ const auditSchema = new Schema({
   target: { type: String, required: true },
 }, { timestamps: true });
 
+const homepageEventFields = {
+  enabled: { type: Boolean, required: true },
+  name: { type: String, required: true },
+  status: { type: String, enum: ["Current event", "Upcoming event"], required: true },
+  eyebrow: { type: String, required: true },
+  title: { type: String, required: true },
+  accent: { type: String, required: true },
+  description: { type: String, required: true },
+  image: { type: String, required: true },
+  imageAlt: { type: String, required: true },
+  primaryLabel: { type: String, required: true },
+  primaryHref: { type: String, required: true },
+  secondaryLabel: { type: String, required: true },
+  secondaryHref: { type: String, required: true },
+  note: { type: String, required: true },
+};
+
 const homepageSchema = new Schema({
   _id: { type: String, required: true },
   revision: { type: Number, required: true, min: 1 },
   content: {
-    event: {
-      enabled: { type: Boolean, required: true },
-      name: { type: String, required: true },
-      status: { type: String, enum: ["Current event", "Upcoming event"], required: true },
-      eyebrow: { type: String, required: true },
-      title: { type: String, required: true },
-      accent: { type: String, required: true },
-      description: { type: String, required: true },
-      image: { type: String, required: true },
-      imageAlt: { type: String, required: true },
-      primaryLabel: { type: String, required: true },
-      primaryHref: { type: String, required: true },
-      secondaryLabel: { type: String, required: true },
-      secondaryHref: { type: String, required: true },
-      note: { type: String, required: true },
-    },
+    event: homepageEventFields,
+    additionalEvent: { type: new Schema(homepageEventFields, { _id: false }), default: undefined },
+    defaultEvent: { type: String, enum: ["event", "additionalEvent"], default: undefined },
     marquee: {
       enabled: { type: Boolean, required: true },
       message: { type: String, required: true },

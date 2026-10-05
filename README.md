@@ -25,8 +25,12 @@ A full-width festive feature and editorial hero use supplied hamper imagery.
   - **Single Premium Box:** ₹1,299.
   - **Corporate Hamper:** ₹1,599.
   - **Executive Corporate Hamper:** ₹2,199.
+- Two owner-supplied Navratri Kanya / Kanjak posters:
+  - **Cone Hamper:** starting at ₹99.
+  - **Kanya / Kanjak Hamper:** starting at ₹149.
 - Package contents and prices are transcribed from the sheets. Full sheets are
-  available on those product pages. Prices are catalogue references, not final
+  available on all five product pages. Navratri prices are explicitly labelled
+  **From**, not presented as fixed prices. Other prices are catalogue references, not final
   checkout prices; tax, branding, availability and delivery require confirmation.
 - The remaining 16 entries have **no invented prices, stock, weights or capacities**.
   Presentation options are not represented as automatically included products.
@@ -43,8 +47,10 @@ A full-width festive feature and editorial hero use supplied hamper imagery.
 
 `src/lib/catalog-data.ts` is the public catalogue's source of truth in **both**
 deployment modes. `CatalogueItem` intentionally has no checkout price or stock
-fields. Its optional `cataloguePrice` uses integer **paise**. Source attribution
-is retained per entry.
+fields. Its optional `cataloguePrice` uses integer **paise**; `priceType: "starting"`
+distinguishes the two Navratri offers from fixed catalogue reference prices.
+Source attribution is retained per entry. The minimum indicative enquiry budget
+is ₹99 per gift, with the existing 10-gift minimum unchanged.
 
 The catalogue is read-only in the operations UI; changes are made in source,
 reviewed and deployed. The old database product collection does not override it.
@@ -79,7 +85,9 @@ GitHub account when setting up another machine.
 No database, Razorpay account or API key is needed to browse the catalogue.
 
 The homepage order is **scrolling marquee → logo/navigation → featured event →
-brand slogans → remaining content**. Diwali is the initial featured event.
+brand slogans → remaining content**. The festival switcher opens with Navratri,
+with Diwali one tap away. It does not auto-rotate, and displays only one event
+heading and image at a time. Both events use the existing blush/green palette.
 The marquee repeats three distinct messages automatically, with no Play/Pause
 buttons. Keyboard focus pauses it for reading; hover does not stop it. A compact
 dismiss button hides the strip until a full reload, including during in-app
@@ -104,20 +112,23 @@ unfinished-policy warnings; this presentation is not finalized legal policy.
 ### Change the featured event and marquee
 
 In database mode, sign in as an administrator and open **`/admin` → Homepage**.
-Edit the event name, current/upcoming label, headings, description, photograph,
+Choose **Festival to edit** to select either event, and **Festival shown first**
+to choose the initial view. Edit the event name, current/upcoming label, headings, description, photograph,
 image description, action labels/destinations, small print and marquee text/link.
 Add, edit or remove up to four additional marquee messages (five total); all
 messages share the configured marquee link. Previously saved single-message
 settings keep their original message/link and gain the two new default messages
 until edited. An explicitly saved empty additional-message list is respected.
 Choose a photograph from the supplied catalogue library; arbitrary image URLs
-and uploads are not supported. Both features have independent visibility controls.
-Select **Publish homepage** to save both together in MongoDB without redeploying.
+and uploads are not supported. Each event and the marquee have independent
+visibility controls. Hidden festivals are skipped; the remaining visible event
+has no unnecessary switcher. Select **Publish homepage** to save both events,
+the initial selection and marquee together in MongoDB without redeploying.
 Reload the public homepage to see the saved content. Existing visitors can refresh
 to receive updates; the site does not push changes into already-open pages.
 
 The stable `/#featured-event` anchor follows whichever event is selected. If the
-event is hidden, give the marquee another destination (such as `/shop`) or hide
+two events are both hidden, give the marquee another destination (such as `/shop`) or hide
 it too. Links must stay on this website. For occasions not already in the enquiry
 form, use `/corporate?occasion=Celebrations#enquiry` rather than an unsupported
 occasion value.
@@ -128,15 +139,18 @@ Authenticated, same-origin saves are validated and audited in one transaction;
 a stale editor cannot overwrite another administrator's update.
 Live requests read the persisted settings without a cross-request content cache.
 Database errors are surfaced rather than silently replacing published content.
-The Diwali defaults in `src/lib/homepage-content.ts` apply only before the first
-save and in demo mode. Demo mode shows a clearly read-only editor; enabling
+Defaults in `src/lib/homepage-content.ts` apply before the first save and in demo
+mode. Legacy saved settings retain their original event and marquee while gaining
+the additional Navratri event and Navratri-first selection when these fields are
+absent. Existing saved fields are never overwritten by a read, and an explicitly
+hidden event remains hidden. Demo mode shows a clearly read-only editor; enabling
 publishing requires the MongoDB and administrator setup below.
 
 | Journey | Current behavior |
 |---|---|
-| Homepage and collection | 19 sourced catalogue entries, search, categories, alphabetical sort and pagination |
-| Product details / quick look | Supplied imagery, package contents where provided, prices on request or labelled catalogue references |
-| Request a quote | Selected item and validated quantity carry into the enquiry; 10-unit minimum |
+| Homepage and collection | 21 sourced catalogue entries, manual Navratri/Diwali switcher, search, categories, alphabetical sort and pagination |
+| Product details / quick look | Supplied imagery, package contents where provided, prices on request, labelled reference prices or advertised starting prices |
+| Request a quote | Selected item, supported product occasion and validated quantity carry into the enquiry; budgets from ₹99 and 10-unit minimum |
 | Wishlist | Browser-local item IDs under `ruvaani-wishlist-v1`; no names or addresses |
 | Gift finder | Recipient, occasion and indicative budget carry into the brief; no unverified budget/stock matching |
 | Contact | All three supplied telephone numbers; optional configured WhatsApp |

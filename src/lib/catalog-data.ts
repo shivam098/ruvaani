@@ -1,3 +1,5 @@
+import { formatPrice } from "./commerce";
+
 export const categories = [
   "Curated hampers",
   "Divine & festive gifts",
@@ -6,9 +8,10 @@ export const categories = [
   "Branding & presentation",
 ] as const;
 
-export const occasions = ["Diwali", "Employee appreciation", "Client gifting", "Corporate events", "Weddings", "Celebrations"];
+export const occasions = ["Navratri", "Diwali", "Employee appreciation", "Client gifting", "Corporate events", "Weddings", "Celebrations"];
 export const recipients = ["Employees", "Clients", "Partners", "Friends & family"];
 export const MINIMUM_QUOTE_QUANTITY = 10;
+export const MINIMUM_QUOTE_BUDGET = 99;
 
 export interface CatalogueItem {
   id: string;
@@ -20,7 +23,10 @@ export interface CatalogueItem {
   image: string;
   imageAlt: string;
   sheet?: string;
+  sheetSize?: { width: number; height: number };
   cataloguePrice?: number;
+  priceType?: "starting";
+  occasion?: string;
   contents?: string[];
   personalizable: boolean;
   featured: boolean;
@@ -52,6 +58,26 @@ const suppliedItems: Omit<CatalogueItem, "image" | "imageAlt">[] = [
     sheet: "/catalogue/executive-corporate-hamper-sheet.webp", source: "Supplied Executive Corporate Hamper sheet",
     contents: ["Royal jars: 100 g roasted kaju & 100 g roasted badam", "Premium diary with company name & logo", "Metal pen with company logo", "Coffee tumbler with company logo", "Coffee mug with company logo", "Humidifier with company logo", "Mini indoor plant", "Scented floral diyas (6)", "Premium scented candle jars (2)", "Personalised thank-you card"],
   },
+  {
+    id: "rc-020", slug: "navratri-kanjak-cone-hamper", name: "Navratri Kanya / Kanjak Cone Hamper",
+    subtitle: "A small hamper for big smiles",
+    description: "A ribbon-wrapped cone hamper for Navratri Kanya / Kanjak gifting, with hair accessories and small toffees. The supplied poster advertises a starting price of ₹99; final assortment, quantity and presentation are confirmed in your quote.",
+    category: "Curated hampers", cataloguePrice: 9900, priceType: "starting", occasion: "Navratri",
+    personalizable: false, featured: false, sheet: "/catalogue/navratri-kanjak-cone-hamper-sheet.webp",
+    sheetSize: { width: 1122, height: 1402 },
+    source: "Owner-supplied Navratri Kanya / Kanjak Cone Hamper poster",
+    contents: ["Baby hair clips", "Scrunchy", "Mini clutcher", "Small toffees"],
+  },
+  {
+    id: "rc-021", slug: "navratri-kanjak-hamper", name: "Navratri Kanya / Kanjak Hamper",
+    subtitle: "Small gifts, big blessings",
+    description: "A bow-tied dome hamper for Navratri Kanya Pujan, bringing together a handkerchief, stationery, hair accessories, a red chunni and chocolates. The supplied poster advertises a starting price of ₹149; the final selection is confirmed in your quote.",
+    category: "Curated hampers", cataloguePrice: 14900, priceType: "starting", occasion: "Navratri",
+    personalizable: false, featured: false, sheet: "/catalogue/navratri-kanjak-hamper-sheet.webp",
+    sheetSize: { width: 1122, height: 1402 },
+    source: "Owner-supplied Navratri Kanya / Kanjak Hamper poster",
+    contents: ["Women's handkerchief", "Cute pencil", "Cute hair clip", "Scrunchie", "Red chunni", "Mini flower clutcher", "KitKat", "Perk chocolate"],
+  },
   { id: "rc-001", slug: "royal-ganesh-divine-gift-box", name: "Royal Ganesh Divine Gift Box", subtitle: "A thoughtful festive blessing", description: "A divine gift-box option from the RUVAANI festive catalogue. Confirm the final selection, finish and presentation with our team.", category: "Divine & festive gifts", personalizable: false, featured: false, source: "RUVAANI Creation, page 5, item 1" },
   { id: "rc-002", slug: "divine-trio-gold-frame", name: "Divine Trio Gold Frame", subtitle: "A keepsake for meaningful occasions", description: "A gold-tone devotional frame from the supplied collection. Dimensions, finish and packaging are confirmed in your quotation.", category: "Divine & festive gifts", personalizable: false, featured: false, source: "RUVAANI Creation, page 5, item 2" },
   { id: "rc-003", slug: "floral-candles", name: "Floral Candles", subtitle: "A little light for their celebrations", description: "Floral candle designs for a festive hamper or gifting selection. Colours, fragrance and quantity are agreed with your brief.", category: "Divine & festive gifts", personalizable: false, featured: false, source: "RUVAANI Creation, page 5, item 3" },
@@ -75,6 +101,11 @@ export const catalogueProducts: CatalogueItem[] = suppliedItems.map((item) => ({
   image: `/catalogue/${item.slug}.webp`,
   imageAlt: `${item.name} shown in the supplied RUVAANI catalogue`,
 }));
+
+export function formatCataloguePrice(product: CatalogueItem) {
+  if (product.cataloguePrice === undefined) return "Price on request";
+  return `${product.priceType === "starting" ? "From " : ""}${formatPrice(product.cataloguePrice)}`;
+}
 
 export function filterCatalogue(products: CatalogueItem[], filters: { query?: string; category?: string; personalizable?: boolean; sort?: string }) {
   const query = filters.query?.trim().toLowerCase() ?? "";

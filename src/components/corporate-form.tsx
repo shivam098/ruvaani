@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { ArrowUpRight, Check, Send } from "lucide-react";
 import { quoteSchema, type QuotePrefill } from "@/lib/validation";
-import { catalogueProducts, occasions } from "@/lib/catalog-data";
+import { catalogueProducts, MINIMUM_QUOTE_BUDGET, occasions } from "@/lib/catalog-data";
 import { contactNumbers } from "@/lib/brand";
 import { apiRequest } from "@/lib/client-api";
 import { useStore } from "./store-provider";
@@ -45,7 +45,7 @@ export function CorporateForm({ initial = {}, warning = "" }: { initial?: QuoteP
       <label>Mobile number<input name="phone" type="tel" inputMode="numeric" autoComplete="tel-national" placeholder="10-digit Indian number" required pattern="[6-9][0-9]{9}" maxLength={10} /></label>
       <label htmlFor="enquiry-occasion">The occasion<select id="enquiry-occasion" name="occasion" aria-label="The occasion" required defaultValue={initial.occasion ?? ""}><option value="" disabled>What are we celebrating?</option>{occasions.map((occasion) => <option key={occasion}>{occasion}</option>)}<option>Something else</option></select></label>
       <label>Number of gifts<input name="quantity" type="number" min={10} max={100000} value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} required /></label>
-      <label>Budget per gift (₹)<input name="budget" type="number" min={299} max={1000000} value={budget} onChange={(e) => setBudget(Number(e.target.value))} required /></label>
+      <label>Budget per gift (₹)<input name="budget" type="number" min={MINIMUM_QUOTE_BUDGET} max={1000000} value={budget} onChange={(e) => setBudget(Number(e.target.value))} required /></label>
       <label>Your ideal delivery date<input name="deliveryDate" type="date" min={new Date().toISOString().slice(0, 10)} required /></label>
       <label className="span-two">Delivery locations<input name="locations" placeholder="City, office or multiple destinations" required minLength={2} maxLength={500} /></label>
       <label className="span-two">Anything else we should know?<textarea name="requirements" rows={3} maxLength={2000} defaultValue={initial.recipient ? `Gifts for: ${initial.recipient}.` : ""} placeholder="Your brand, their interests, a special little detail..." /></label>

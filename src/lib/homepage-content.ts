@@ -1,12 +1,16 @@
 import { z } from "zod";
 import { catalogueProducts, quoteHref } from "./catalog-data";
 
+const navratriImage = { src: "/catalogue/navratri-collection.webp", label: "Navratri Kanya / Kanjak collection", alt: "RUVAANI Navratri cone and dome hampers with pink bows, hair accessories and treats" };
 export const eventImages = [
   { src: "/catalogue/festive-collection.webp", label: "Festive collection", alt: "Festive hampers, a glowing diya and gold-ribbon gift boxes from the RUVAANI catalogue" },
+  navratriImage,
   ...catalogueProducts.map((product) => ({ src: product.image, label: product.name, alt: product.imageAlt })),
 ];
 
-export const defaultMarqueeMessages = ["Personalised gifting, made meaningful", "Corporate gifting from 10 gifts"];
+export const defaultMarqueeMessages = ["The Diwali edit is here", "Corporate gifting from 10 gifts"];
+export const eventSlots = ["event", "additionalEvent"] as const;
+export type EventSlot = typeof eventSlots[number];
 
 const text = (label: string, maximum: number) => z.string().trim().min(1, `${label} is required.`).max(maximum, `${label} must be ${maximum} characters or fewer.`);
 const siteLink = text("Link", 300).refine((value) => {
@@ -19,23 +23,44 @@ const siteLink = text("Link", 300).refine((value) => {
   } catch { return false; }
 }, "Use a link within this website, starting with a single /.");
 
+const featuredEventSchema = z.object({
+  enabled: z.boolean(),
+  name: text("Event name", 50),
+  status: z.enum(["Current event", "Upcoming event"]),
+  eyebrow: text("Section label", 60),
+  title: text("Heading", 60),
+  accent: text("Highlighted heading", 40),
+  description: text("Description", 280),
+  image: z.string().refine((value) => eventImages.some((image) => image.src === value), "Choose an available catalogue photograph."),
+  imageAlt: text("Image description", 180),
+  primaryLabel: text("Collection button label", 45),
+  primaryHref: siteLink,
+  secondaryLabel: text("Enquiry link label", 45),
+  secondaryHref: siteLink,
+  note: text("Small print", 120),
+}).strict();
+
+const defaultNavratriEvent: z.infer<typeof featuredEventSchema> = {
+  enabled: true,
+  name: "Navratri",
+  status: "Upcoming event",
+  eyebrow: "THE NAVRATRI SPECIAL",
+  title: "Small gifts.",
+  accent: "Big blessings.",
+  description: "Kanya / Kanjak gifting, thoughtfully wrapped. Explore our cone hamper from ₹99 and dome hamper from ₹149.",
+  image: navratriImage.src,
+  imageAlt: navratriImage.alt,
+  primaryLabel: "Explore gifts from ₹99",
+  primaryHref: "/shop?q=Navratri",
+  secondaryLabel: "Plan Navratri gifting",
+  secondaryHref: quoteHref({ occasion: "Navratri", budget: 99 }),
+  note: "Advertised starting prices. Final contents, tax and delivery confirmed in your quote. From 10 gifts.",
+};
+
 export const homepageContentSchema = z.object({
-  event: z.object({
-    enabled: z.boolean(),
-    name: text("Event name", 50),
-    status: z.enum(["Current event", "Upcoming event"]),
-    eyebrow: text("Section label", 60),
-    title: text("Heading", 60),
-    accent: text("Highlighted heading", 40),
-    description: text("Description", 280),
-    image: z.string().refine((value) => eventImages.some((image) => image.src === value), "Choose an available catalogue photograph."),
-    imageAlt: text("Image description", 180),
-    primaryLabel: text("Collection button label", 45),
-    primaryHref: siteLink,
-    secondaryLabel: text("Enquiry link label", 45),
-    secondaryHref: siteLink,
-    note: text("Small print", 120),
-  }).strict(),
+  event: featuredEventSchema,
+  additionalEvent: featuredEventSchema.default(() => ({ ...defaultNavratriEvent })),
+  defaultEvent: z.enum(eventSlots).default("additionalEvent"),
   marquee: z.object({
     enabled: z.boolean(),
     message: text("Marquee message", 140),
@@ -43,7 +68,7 @@ export const homepageContentSchema = z.object({
     href: siteLink,
   }).strict(),
 }).strict().superRefine((content, context) => {
-  if (!content.event.enabled && content.marquee.enabled && siteLink.safeParse(content.marquee.href).success) {
+  if (!content.event.enabled && !content.additionalEvent.enabled && content.marquee.enabled && siteLink.safeParse(content.marquee.href).success) {
     const destination = new URL(content.marquee.href, "https://ruvaani.example");
     if (destination.pathname === "/" && destination.hash === "#featured-event") {
       context.addIssue({ code: "custom", path: ["marquee", "href"], message: "The featured event is hidden. Change the marquee link or hide the marquee too." });
@@ -76,5 +101,7 @@ export const defaultHomepageContent: HomepageContent = {
     secondaryHref: quoteHref({ occasion: "Diwali" }),
     note: "From 10 gifts. Made personal, together.",
   },
-  marquee: { enabled: true, message: "The Diwali edit is here", additionalMessages: [...defaultMarqueeMessages], href: "/#featured-event" },
+  additionalEvent: { ...defaultNavratriEvent },
+  defaultEvent: "additionalEvent",
+  marquee: { enabled: true, message: "Navratri specials from ₹99", additionalMessages: [...defaultMarqueeMessages], href: "/#featured-event" },
 };

@@ -68,9 +68,9 @@ test("event and gifting process details stay available without crowding the firs
   await expect(event.locator("p").first()).not.toBeVisible();
   await event.locator("summary").focus();
   await page.keyboard.press("Enter");
-  await expect(event.locator("p").first()).toContainText("Thoughtful hampers, festive keepsakes");
+  await expect(event.locator("p").first()).toContainText("Kanya / Kanjak gifting");
   await expect(event.locator("p").first()).toBeVisible();
-  await expect(event).toContainText("From 10 gifts. Made personal, together.");
+  await expect(event).toContainText("From 10 gifts.");
   await page.goto("/corporate#enquiry");
   await expect(page.locator(".process-steps")).not.toBeVisible();
   await page.getByText("How your enquiry becomes an order", { exact: true }).click();

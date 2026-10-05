@@ -18,7 +18,7 @@ const policies: Record<string, { title: string; summary: string[]; sections: [st
     "Branding, taxes and delivery must be agreed before an order is accepted.",
     "There is no online checkout or payment collection.",
   ], sections: [
-    ["Catalogue and quotations", "The website presents the supplied RUVAANI catalogue and three hamper sheets. Displayed package prices are catalogue references, not a confirmed quotation. Other items are priced on request. There is no direct checkout or online payment collection."],
+    ["Catalogue and quotations", "The website presents the supplied RUVAANI catalogue, three signature hamper sheets and two Navratri posters. Displayed package prices are catalogue references; prices marked From are advertised starting prices, not fixed final prices. Neither is a confirmed quotation. Other items are priced on request. There is no direct checkout or online payment collection."],
     ["Enquiries and estimates", "A corporate enquiry records a gifting brief for review. Budget calculations are planning estimates, not approved quotes. Personalization, shipping and tax must be confirmed before a corporate order is accepted."],
     ["Before accepting customers", "The store owner must supply and approve business registration details, contact information, final product descriptions, payment terms, consumer rights, dispute procedures, delivery commitments and refund rules. This page is a launch checklist, not legal advice or finalized legal terms."],
   ] },

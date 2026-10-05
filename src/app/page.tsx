@@ -4,7 +4,7 @@ import { ArrowRight, ArrowUpRight, Check, Flower2, Gift, Heart, Package, PenLine
 import { getProducts } from "@/lib/catalog";
 import { quoteHref } from "@/lib/catalog-data";
 import { ProductCard } from "@/components/product-card";
-import { EventHighlight } from "@/components/event-highlight";
+import { FestivalSwitcher } from "@/components/festival-switcher";
 import { getHomepageSettings } from "@/lib/homepage-settings";
 
 const collections = [
@@ -17,9 +17,10 @@ const collections = [
 
 export default async function Home() {
   const [products, homepage] = await Promise.all([getProducts(), getHomepageSettings()]);
-  const SloganHeading = homepage.content.event.enabled ? "h2" : "h1";
+  const hasFeaturedEvent = homepage.content.event.enabled || homepage.content.additionalEvent.enabled;
+  const SloganHeading = hasFeaturedEvent ? "h2" : "h1";
   return <>
-    <EventHighlight event={homepage.content.event} />
+    <FestivalSwitcher key={homepage.revision} content={homepage.content} />
     <section className="premium-hero">
       <div className="wrap premium-hero-grid">
         <div className="premium-hero-copy">
@@ -29,7 +30,7 @@ export default async function Home() {
           <div className="premium-hero-signature"><span />Thoughtfully crafted. Beautifully gifted.</div>
         </div>
         <figure className="premium-hero-figure">
-          <div className="premium-hero-frame"><Image src="/catalogue/single-premium-box.webp" alt="RUVAANI's cream gift box with emerald diary, branded tumbler, indoor plant and ruby ribbon" fill preload={!homepage.content.event.enabled} sizes="(max-width: 760px) 90vw, 44vw" className="hero-photo" /></div>
+          <div className="premium-hero-frame"><Image src="/catalogue/single-premium-box.webp" alt="RUVAANI's cream gift box with emerald diary, branded tumbler, indoor plant and ruby ribbon" fill preload={!hasFeaturedEvent} sizes="(max-width: 760px) 90vw, 44vw" className="hero-photo" /></div>
           <figcaption><Link href="/products/single-premium-box">Discover the Single Premium Box <ArrowUpRight size={19} /></Link></figcaption>
         </figure>
       </div>

@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { apiRequest } from "@/lib/client-api";
-import { eventImages, homepageContentSchema, type HomepageContent, type HomepageSettings } from "@/lib/homepage-content";
+import { eventImages, eventSlots, homepageContentSchema, type EventSlot, type HomepageContent, type HomepageSettings } from "@/lib/homepage-content";
 
 const headingFields = [
   ["eyebrow", "Section label", 60],
@@ -26,8 +26,10 @@ export function HomepageEditor({ initial, demo }: { initial: HomepageSettings; d
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [eventSlot, setEventSlot] = useState<EventSlot>("event");
+  const event = content[eventSlot];
   function eventField<K extends keyof HomepageContent["event"]>(key: K, value: HomepageContent["event"][K]) {
-    setContent((previous) => ({ ...previous, event: { ...previous.event, [key]: value } }));
+    setContent((previous) => ({ ...previous, [eventSlot]: { ...previous[eventSlot], [key]: value } }));
     setNotice("");
   }
   function marqueeField<K extends keyof HomepageContent["marquee"]>(key: K, value: HomepageContent["marquee"][K]) {
@@ -51,26 +53,36 @@ export function HomepageEditor({ initial, demo }: { initial: HomepageSettings; d
   }
   return <form className="homepage-editor" onSubmit={save} aria-label="Homepage event and marquee">
     <h2>The moment in the spotlight.</h2>
-    <p className="helper-text">Page order: marquee, logo/navigation, featured event, then brand slogans and the collection. Choose the current or upcoming event manually; publishing does not require a redeploy.</p>
+    <p className="helper-text">Page order: marquee, logo/navigation, festival switcher, then brand slogans and the collection. Edit either festival and choose which appears first. Hidden festivals are skipped; switching is manual, not timed.</p>
     {demo && <p className="notice">Read-only demo. To publish changes, configure MongoDB, set DEMO_MODE=false and sign in with an administrator account.</p>}
     <fieldset disabled={demo || busy}>
-      <legend>Featured event</legend>
-      <label className="checkbox-label"><input type="checkbox" checked={content.event.enabled} onChange={(e) => eventField("enabled", e.target.checked)} />Show featured event</label>
+      <legend>Festival selection</legend>
       <div className="form-grid">
-        <label>Event name<input required maxLength={50} value={content.event.name} onChange={(e) => eventField("name", e.target.value)} /></label>
-        <label>Event timing<select value={content.event.status} onChange={(e) => eventField("status", e.target.value === "Current event" ? "Current event" : "Upcoming event")}><option>Upcoming event</option><option>Current event</option></select></label>
-        {headingFields.map(([key, label, maximum]) => <label key={key}>{label}<input required maxLength={maximum} value={content.event[key]} onChange={(e) => eventField(key, e.target.value)} /></label>)}
-        <div className="span-two"><label htmlFor="event-description">Description</label><textarea id="event-description" required maxLength={280} rows={3} value={content.event.description} onChange={(e) => eventField("description", e.target.value)} /></div>
-        <label>Banner image<select value={content.event.image} onChange={(e) => {
+        <label>Festival to edit<select value={eventSlot} onChange={(e) => setEventSlot(e.target.value === "event" ? "event" : "additionalEvent")}>{eventSlots.map((slot) => <option key={slot} value={slot}>{content[slot].name} ({slot === "event" ? "original" : "additional"} event)</option>)}</select></label>
+        <label>Festival shown first<select value={content.defaultEvent} onChange={(e) => {
+          const defaultEvent = e.target.value === "event" ? "event" : "additionalEvent";
+          setContent((previous) => ({ ...previous, defaultEvent })); setNotice("");
+        }}>{eventSlots.map((slot) => <option key={slot} value={slot}>{content[slot].name}</option>)}</select></label>
+      </div>
+    </fieldset>
+    <fieldset disabled={demo || busy}>
+      <legend>Featured event</legend>
+      <label className="checkbox-label"><input type="checkbox" checked={event.enabled} onChange={(e) => eventField("enabled", e.target.checked)} />Show featured event</label>
+      <div className="form-grid">
+        <label>Event name<input required maxLength={50} value={event.name} onChange={(e) => eventField("name", e.target.value)} /></label>
+        <label>Event timing<select value={event.status} onChange={(e) => eventField("status", e.target.value === "Current event" ? "Current event" : "Upcoming event")}><option>Upcoming event</option><option>Current event</option></select></label>
+        {headingFields.map(([key, label, maximum]) => <label key={key}>{label}<input required maxLength={maximum} value={event[key]} onChange={(e) => eventField(key, e.target.value)} /></label>)}
+        <div className="span-two"><label htmlFor="event-description">Description</label><textarea id="event-description" required maxLength={280} rows={3} value={event.description} onChange={(e) => eventField("description", e.target.value)} /></div>
+        <label>Banner image<select value={event.image} onChange={(e) => {
           const image = eventImages.find((item) => item.src === e.target.value);
-          if (image) setContent((previous) => ({ ...previous, event: { ...previous.event, image: image.src, imageAlt: image.alt } }));
+          if (image) setContent((previous) => ({ ...previous, [eventSlot]: { ...previous[eventSlot], image: image.src, imageAlt: image.alt } }));
           setNotice("");
         }}>{eventImages.map((image) => <option value={image.src} key={image.src}>{image.label}</option>)}</select></label>
-        <label>Image description<input required maxLength={180} value={content.event.imageAlt} onChange={(e) => eventField("imageAlt", e.target.value)} /></label>
+        <label>Image description<input required maxLength={180} value={event.imageAlt} onChange={(e) => eventField("imageAlt", e.target.value)} /></label>
       </div>
-      <div className="event-image-preview"><Image src={content.event.image} alt={content.event.imageAlt} fill sizes="(max-width: 760px) 90vw, 600px" /></div>
+      <div className="event-image-preview"><Image src={event.image} alt={event.imageAlt} fill sizes="(max-width: 760px) 90vw, 600px" /></div>
       <p className="helper-text">Choose from the supplied catalogue photographs. Image descriptions are read by screen readers.</p>
-      <div className="form-grid">{linkFields.map(([key, label, maximum]) => <label key={key}>{label}<input required maxLength={maximum} value={content.event[key]} onChange={(e) => eventField(key, e.target.value)} /></label>)}</div>
+      <div className="form-grid">{linkFields.map(([key, label, maximum]) => <label key={key}>{label}<input required maxLength={maximum} value={event[key]} onChange={(e) => eventField(key, e.target.value)} /></label>)}</div>
       <p className="helper-text">Links must start with / and stay on this site. For a new occasion, use /shop and /corporate?occasion=Celebrations#enquiry, or choose an existing occasion from the enquiry form.</p>
     </fieldset>
     <fieldset disabled={demo || busy}>
@@ -86,7 +98,7 @@ export function HomepageEditor({ initial, demo }: { initial: HomepageSettings; d
       </div>)}
       <button type="button" className="button button-outline" disabled={content.marquee.additionalMessages.length >= 4} onClick={() => marqueeField("additionalMessages", [...content.marquee.additionalMessages, ""])}>Add another message</button>
       <p className="helper-text">Use up to five messages with one destination. Scrolling starts automatically; visitors can dismiss the strip. Reduced-motion visitors see static messages.</p>
-      <details><summary>Marquee link guidance</summary><p className="helper-text">Use /#featured-event to link to the visible event. If you hide the event, use another destination such as /shop, or hide the marquee too.</p></details>
+      <details><summary>Marquee link guidance</summary><p className="helper-text">Use /#featured-event to link to the festival switcher. If you hide both festivals, use another destination such as /shop, or hide the marquee too.</p></details>
     </fieldset>
     {error && <p role="alert" className="form-error">{error}</p>}
     {notice && <p role="status" className="notice">{notice}</p>}

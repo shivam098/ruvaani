@@ -4,7 +4,7 @@ test("premium hero uses supplied branding and remains responsive", async ({ page
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Light up their Diwali.");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Small gifts. Big blessings.");
   await expect(page.locator(".premium-hero").getByRole("heading", { level: 2 })).toContainText("Gifts that create");
   await expect(page.locator(".premium-hero .premium-eyebrow")).toHaveCount(0);
   await expect(page.locator(".premium-hero")).not.toContainText("RUVAANI · CREATIONS & PACKAGING");
@@ -58,7 +58,7 @@ test("marquee is at the very top, followed by navigation, event and slogans", as
   expect(order[0].top).toBe(0);
   for (let index = 1; index < order.length; index++) expect(order[index].top).toBeGreaterThanOrEqual(order[index - 1].bottom);
   await expect(page.locator("#featured-event")).toBeInViewport();
-  await expect(page.locator(".festival-status")).toHaveText("Upcoming event · Diwali");
+  await expect(page.locator(".festival-status")).toHaveText("Upcoming event · Navratri");
   await page.locator("#featured-event img").evaluate((image) => {
     if (!(image instanceof HTMLImageElement)) throw new Error("Expected the featured event photograph.");
     return image.decode();
@@ -124,6 +124,7 @@ test("Diwali highlight links to festive gifts and a Diwali-prefilled enquiry", a
   await page.goto("/shop");
   await page.locator(".announcement").getByRole("link", { name: "The Diwali edit is here" }).click();
   await expect(page).toHaveURL(/\/#featured-event$/);
+  await page.getByRole("button", { name: "Diwali", exact: true }).click();
   const festival = page.getByRole("region", { name: "Light up their Diwali." });
   await expect(festival).toBeInViewport();
   await expect(festival.getByRole("img")).toBeVisible();
@@ -140,6 +141,7 @@ test("Diwali highlight links to festive gifts and a Diwali-prefilled enquiry", a
   await expect(page.getByRole("radio", { name: "Divine & festive gifts" })).toBeChecked();
   await expect(page.locator(".product-card")).toHaveCount(5);
   await page.locator(".announcement").getByRole("link", { name: "The Diwali edit is here" }).click();
+  await page.getByRole("button", { name: "Diwali", exact: true }).click();
   await festival.getByRole("link", { name: "Plan your Diwali gifting" }).click();
   await expect(page).toHaveURL(/\/corporate\?occasion=Diwali#enquiry/);
   await expect(page.getByRole("combobox", { name: "The occasion", exact: true })).toHaveValue("Diwali");
@@ -152,7 +154,7 @@ test("marquee scrolls automatically without playback buttons and can be dismisse
   const announcement = page.locator(".announcement");
   const track = announcement.locator(".announcement-track");
   await expect(announcement.getByRole("link")).toHaveCount(1);
-  for (const text of ["The Diwali edit is here", "Personalised gifting, made meaningful", "Corporate gifting from 10 gifts"]) {
+  for (const text of ["Navratri specials from ₹99", "The Diwali edit is here", "Corporate gifting from 10 gifts"]) {
     await expect(track.locator(".announcement-group").first()).toContainText(text);
   }
   await expect(track).toHaveCSS("animation-name", "festival-marquee");
@@ -208,7 +210,9 @@ test("homepage editor is visibly read-only in demo mode and never publishes", as
   await expect(editor.getByLabel("Event name", { exact: true })).toHaveValue("Diwali");
   await expect(editor.getByLabel("Event name", { exact: true })).toBeDisabled();
   await expect(editor.getByRole("button", { name: "Publish homepage" })).toBeDisabled();
-  await expect(editor.getByRole("textbox", { name: "Additional message 1", exact: true })).toHaveValue("Personalised gifting, made meaningful");
+  await expect(editor.getByRole("textbox", { name: "Additional message 1", exact: true })).toHaveValue("The Diwali edit is here");
+  await expect(editor.getByLabel("Festival to edit")).toBeDisabled();
+  await expect(editor.getByLabel("Festival shown first")).toHaveValue("additionalEvent");
   await expect(editor.getByRole("textbox", { name: "Additional message 2", exact: true })).toHaveValue("Corporate gifting from 10 gifts");
   await expect(editor).toContainText("Read-only demo. To publish changes");
   expect(writes).toBe(0);
@@ -219,9 +223,9 @@ test("homepage editor is visibly read-only in demo mode and never publishes", as
 test("catalogue filters, search, pagination and quick view use supplied entries", async ({ page }, info) => {
   await page.goto("/shop");
   await expect(page.locator(".product-card")).toHaveCount(6);
-  await expect(page.getByText("19 thoughtful finds")).toBeVisible();
+  await expect(page.getByText("21 thoughtful finds")).toBeVisible();
   await page.getByRole("button", { name: "Page 4", exact: true }).click();
-  await expect(page.locator(".product-card")).toHaveCount(1);
+  await expect(page.locator(".product-card")).toHaveCount(3);
   await page.getByRole("searchbox", { name: "Search gifts", exact: true }).fill("cashews");
   await expect(page.locator(".product-card")).toHaveCount(1);
   await expect(page.getByRole("heading", { name: "Roasted Cashews" })).toBeVisible();
