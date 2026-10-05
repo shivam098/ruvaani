@@ -83,6 +83,34 @@ const auditSchema = new Schema({
   target: { type: String, required: true },
 }, { timestamps: true });
 
+const homepageSchema = new Schema({
+  _id: { type: String, required: true },
+  revision: { type: Number, required: true, min: 1 },
+  content: {
+    event: {
+      enabled: { type: Boolean, required: true },
+      name: { type: String, required: true },
+      status: { type: String, enum: ["Current event", "Upcoming event"], required: true },
+      eyebrow: { type: String, required: true },
+      title: { type: String, required: true },
+      accent: { type: String, required: true },
+      description: { type: String, required: true },
+      image: { type: String, required: true },
+      imageAlt: { type: String, required: true },
+      primaryLabel: { type: String, required: true },
+      primaryHref: { type: String, required: true },
+      secondaryLabel: { type: String, required: true },
+      secondaryHref: { type: String, required: true },
+      note: { type: String, required: true },
+    },
+    marquee: {
+      enabled: { type: Boolean, required: true },
+      message: { type: String, required: true },
+      href: { type: String, required: true },
+    },
+  },
+}, { timestamps: true });
+
 function model<S extends Schema>(name: string, schema: S): Model<InferSchemaType<S>> {
   return (mongoose.models[name] as Model<InferSchemaType<S>> | undefined) || mongoose.model<InferSchemaType<S>>(name, schema);
 }
@@ -94,4 +122,5 @@ export const OrderModel = model("Order", orderSchema);
 export const QuoteModel = model("Quote", quoteSchema);
 export const RateModel = model("RateLimit", rateSchema);
 export const AuditModel = model("AuditLog", auditSchema);
+export const HomepageModel = model("Homepage", homepageSchema);
 export type StoredOrder = InferSchemaType<typeof orderSchema>;

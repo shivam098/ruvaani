@@ -78,14 +78,38 @@ GitHub account when setting up another machine.
 
 No database, Razorpay account or API key is needed to browse the catalogue.
 
-The homepage's Diwali highlight uses supplied catalogue photography and original
-RUVAANI styling. The announcement links to this section from every page; its
-slow marquee has a persistent pause control, pauses for hover/keyboard reading,
-and becomes a static link when reduced motion is preferred. The feature's
-actions open festive catalogue items or prefill a Diwali enquiry. This is a
-manually maintained seasonal edit, not an automatic festival calendar or a
-promise of delivery before a holiday. Update the homepage and header together
-when changing the featured occasion.
+The homepage order is **scrolling marquee → logo/navigation → featured event →
+brand slogans → remaining content**. Diwali is the initial featured event.
+The marquee repeats continuously at a readable speed, with pause/resume,
+hover/keyboard pause and a static equivalent for reduced-motion preferences.
+The event uses supplied catalogue photography, not third-party promotional art.
+
+### Change the featured event and marquee
+
+In database mode, sign in as an administrator and open **`/admin` → Homepage**.
+Edit the event name, current/upcoming label, headings, description, photograph,
+image description, action labels/destinations, small print and marquee text/link.
+Choose a photograph from the supplied catalogue library; arbitrary image URLs
+and uploads are not supported. Both features have independent visibility controls.
+Select **Publish homepage** to save both together in MongoDB without redeploying.
+Reload the public homepage to see the saved content. Existing visitors can refresh
+to receive updates; the site does not push changes into already-open pages.
+
+The stable `/#featured-event` anchor follows whichever event is selected. If the
+event is hidden, give the marquee another destination (such as `/shop`) or hide
+it too. Links must stay on this website. For occasions not already in the enquiry
+form, use `/corporate?occasion=Celebrations#enquiry` rather than an unsupported
+occasion value.
+
+This is a manually chosen seasonal feature, not an automatic holiday calendar,
+countdown or delivery promise. No event dates or deadlines are inferred.
+Authenticated, same-origin saves are validated and audited in one transaction;
+a stale editor cannot overwrite another administrator's update.
+Live requests read the persisted settings without a cross-request content cache.
+Database errors are surfaced rather than silently replacing published content.
+The Diwali defaults in `src/lib/homepage-content.ts` apply only before the first
+save and in demo mode. Demo mode shows a clearly read-only editor; enabling
+publishing requires the MongoDB and administrator setup below.
 
 | Journey | Current behavior |
 |---|---|
@@ -97,7 +121,7 @@ when changing the featured occasion.
 | Contact | All three supplied telephone numbers; optional configured WhatsApp |
 | Enquiry in demo mode | Explicit non-submitting preview with telephone alternatives |
 | Enquiry in database mode | Validated, rate-limited persistence with consent, reference number and server-resolved item name |
-| Operations | Read-only public catalogue; authenticated enquiry and existing-order operations |
+| Operations | Read-only catalogue; authenticated enquiry/order operations and editable homepage event/marquee |
 | Old `/cart` and `/checkout` links | Redirect to the enquiry form |
 | Direct `POST /api/checkout` | HTTP 410; no order, provider request or stock reservation |
 

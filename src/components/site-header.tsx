@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRef, useState } from "react";
-import { ArrowUpRight, Gift, Heart, Menu, Pause, Play, Search, Sparkles, UserRound, X } from "lucide-react";
+import { ArrowUpRight, Gift, Heart, Menu, Search, UserRound, X } from "lucide-react";
 import { useStore } from "./store-provider";
 import { BrandLogo } from "./brand-logo";
 
@@ -11,27 +11,14 @@ const links = [
   ["The collection", "/shop"], ["Corporate gifting", "/corporate"],
   ["Our story", "/about"], ["Contact", "/contact"],
 ];
-const festivalAnnouncement = "The Diwali edit is here";
 
 export function SiteHeader() {
   const { wishlist } = useStore();
   const [menu, setMenu] = useState(false);
-  const [announcementPaused, setAnnouncementPaused] = useState(false);
   const search = useRef<HTMLDialogElement>(null);
   const path = usePathname();
   return (
     <>
-      <div className="announcement" data-paused={announcementPaused}>
-        <Link href="/#diwali" className="announcement-link" aria-label={festivalAnnouncement}>
-          <span id="announcement-track" className="announcement-track" aria-hidden="true">
-            {[0, 1].map((copy) => <span className="announcement-group" key={copy}>
-              {[0, 1, 2].map((item) => <span className="announcement-item" key={item}><Sparkles size={14} />{festivalAnnouncement}<ArrowUpRight size={14} /></span>)}
-            </span>)}
-          </span>
-          <span className="announcement-static" aria-hidden="true"><Sparkles size={14} />{festivalAnnouncement}<ArrowUpRight size={14} /></span>
-        </Link>
-        <button type="button" className="announcement-pause" aria-controls="announcement-track" aria-label={announcementPaused ? "Resume announcement" : "Pause announcement"} onClick={() => setAnnouncementPaused(!announcementPaused)}>{announcementPaused ? <Play size={14} aria-hidden="true" /> : <Pause size={14} aria-hidden="true" />}</button>
-      </div>
       <header className="site-header">
         <div className="header-main wrap">
           <button className="icon-button mobile-menu-button" aria-label={menu ? "Close menu" : "Open menu"} aria-expanded={menu} aria-controls="mobile-navigation" onClick={() => setMenu(!menu)}>{menu ? <X /> : <Menu />}</button>

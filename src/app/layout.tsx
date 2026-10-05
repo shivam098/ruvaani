@@ -5,6 +5,8 @@ import { isDemoMode, siteUrl } from "@/lib/config";
 import { StoreProvider } from "@/components/store-provider";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { AnnouncementMarquee } from "@/components/announcement-marquee";
+import { getHomepageSettings } from "@/lib/homepage-settings";
 import "./globals.css";
 
 const sans = DM_Sans({
@@ -29,7 +31,7 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const products = await getProducts();
+  const [products, homepage] = await Promise.all([getProducts(), getHomepageSettings()]);
   const demo = isDemoMode();
   return (
     <html
@@ -39,6 +41,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <StoreProvider products={products} demo={demo}>
           <a className="skip-link" href="#main-content">Skip to content</a>
+          <AnnouncementMarquee announcement={homepage.content.marquee} />
           <SiteHeader />
           <main id="main-content">{children}</main>
           <SiteFooter demo={demo} />
