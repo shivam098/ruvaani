@@ -14,6 +14,7 @@ export function ProductDetails({ product }: { product: CatalogueItem }) {
   const [quantity, setQuantity] = useState(String(MINIMUM_QUOTE_QUANTITY));
   const [sheet, setSheet] = useState(false);
   const [error, setError] = useState("");
+  const saved = wishlist.includes(product.id);
   function validateQuantity(event: React.FormEvent<HTMLFormElement>) {
     if (!Number.isSafeInteger(Number(quantity)) || Number(quantity) < MINIMUM_QUOTE_QUANTITY || Number(quantity) > 100000) {
       event.preventDefault();
@@ -30,16 +31,16 @@ export function ProductDetails({ product }: { product: CatalogueItem }) {
     <div className="product-info">
       <span className="eyebrow">{product.category}</span><h1>{product.name}</h1><p className="product-tagline">{product.subtitle}</p>
       <div className="detail-price"><strong>{product.cataloguePrice ? formatPrice(product.cataloguePrice) : "Price on request"}</strong><span>{product.cataloguePrice ? "As listed in the supplied catalogue" : "Quoted according to customisation"}</span></div>
-      <p className="detail-description">{product.description}</p>
-      <div className="quote-detail-note"><PenLine size={20} /><p><strong>A gift made to your brief.</strong> Minimum enquiry: 10 gifts. Availability, branding, tax and delivery charges are confirmed in your final quotation—not at checkout.</p></div>
+      <div className="quote-detail-note"><PenLine size={20} /><p><strong>Made for you, from 10 gifts.</strong><br />Your final quote confirms availability, branding, tax and delivery. No online checkout.</p></div>
       <form action="/corporate#enquiry" className="quote-product-form" onSubmit={validateQuantity}>
         <input type="hidden" name="product" value={product.id} />
         <label>Quantity for your quote<input type="number" name="quantity" min={10} max={100000} step={1} value={quantity} onChange={(event) => { setQuantity(event.target.value); setError(""); }} required /></label>
         <button className="button button-primary">Request a quote <ArrowUpRight size={18} /></button>
-        <button type="button" className="button button-outline detail-wishlist" aria-label="Save gift to wishlist" aria-pressed={wishlist.includes(product.id)} onClick={() => toggleWishlist(product.id)}><Heart size={20} fill={wishlist.includes(product.id) ? "currentColor" : "none"} /></button>
+        <button type="button" className="button button-outline detail-wishlist save-gift" aria-label={saved ? "Saved gift. Remove from wishlist" : "Save gift to wishlist"} aria-pressed={saved} onClick={() => toggleWishlist(product.id)}><Heart size={20} fill={saved ? "currentColor" : "none"} />{saved ? "Saved" : "Save gift"}</button>
       </form>
       {error && <p className="form-error" role="alert">{error}</p>}
       <div className="product-accordions">
+        <details><summary>About this gift</summary><p>{product.description}</p></details>
         {product.contents && <details open><summary>Inside the hamper</summary><ul>{product.contents.map((item) => <li key={item}><Check size={14} />{item}</li>)}</ul></details>}
         <details open={!product.contents}><summary>Make it yours</summary><p>{product.personalizable ? "Discuss company branding, names, messages and presentation with our team. Artwork and customisation are approved before production." : "Include this item in a bespoke hamper and discuss the available finishes and presentation with our team."} No personalisation fee is assumed.</p></details>
         <details><summary>Pricing & delivery</summary><p>{product.cataloguePrice ? "The displayed price is transcribed from the supplied product sheet. " : "A fixed price was not supplied for this item. "}Quantity, exact contents, taxes, branding and delivery are confirmed in writing. No online payment is collected here. <Link href="/policies/shipping">Delivery information</Link>.</p></details>

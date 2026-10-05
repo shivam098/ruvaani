@@ -85,7 +85,8 @@ export function HomepageEditor({ initial, demo }: { initial: HomepageSettings; d
         <button type="button" className="text-button" aria-label={`Remove additional message ${index + 1}`} onClick={() => marqueeField("additionalMessages", content.marquee.additionalMessages.filter((_, itemIndex) => itemIndex !== index))}>Remove</button>
       </div>)}
       <button type="button" className="button button-outline" disabled={content.marquee.additionalMessages.length >= 4} onClick={() => marqueeField("additionalMessages", [...content.marquee.additionalMessages, ""])}>Add another message</button>
-      <p className="helper-text">Use up to five messages; they share the same destination. Use /#featured-event to link to the visible event. If you hide the event, use another destination such as /shop, or hide the marquee too. Visitors can pause or play scrolling; reduced-motion visitors see static messages until they choose Play.</p>
+      <p className="helper-text">Use up to five messages with one destination. Scrolling starts automatically; visitors can dismiss the strip. Reduced-motion visitors see static messages.</p>
+      <details><summary>Marquee link guidance</summary><p className="helper-text">Use /#featured-event to link to the visible event. If you hide the event, use another destination such as /shop, or hide the marquee too.</p></details>
     </fieldset>
     {error && <p role="alert" className="form-error">{error}</p>}
     {notice && <p role="status" className="notice">{notice}</p>}

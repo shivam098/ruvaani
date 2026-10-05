@@ -145,7 +145,7 @@ test("Diwali highlight links to festive gifts and a Diwali-prefilled enquiry", a
   await expect(page.getByRole("combobox", { name: "The occasion", exact: true })).toHaveValue("Diwali");
 });
 
-test("multi-message marquee moves continuously even under the pointer and can be paused", async ({ page }) => {
+test("marquee scrolls automatically without playback buttons and can be dismissed", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.goto("/");
   await page.mouse.move(0, 160);
@@ -164,20 +164,26 @@ test("multi-message marquee moves continuously even under the pointer and can be
   await expect(track).toHaveCSS("animation-play-state", "running");
   const hovered = await offset();
   await expect.poll(async () => Math.abs((await offset()) - hovered)).toBeGreaterThan(20);
-  await announcement.getByRole("button", { name: "Pause announcement" }).click();
-  await page.locator(".site-header .brand-logo").focus();
+  await expect(announcement.getByRole("button", { name: /pause|play|start|stop/i })).toHaveCount(0);
+  await announcement.getByRole("button", { name: "Dismiss announcements" }).focus();
+  await page.keyboard.press("Shift+Tab");
+  await expect(announcement.getByRole("link")).toBeFocused();
   await expect(track).toHaveCSS("animation-play-state", "paused");
   const paused = await offset();
   await page.waitForTimeout(250);
   expect(await offset()).toBeCloseTo(paused, 1);
-  await announcement.getByRole("button", { name: "Play announcement" }).click();
-  await expect(track).toHaveCSS("animation-play-state", "running");
-  await page.keyboard.press("Shift+Tab");
-  await expect(announcement.getByRole("link")).toBeFocused();
-  await expect(track).toHaveCSS("animation-play-state", "paused");
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Enter");
+  await expect(announcement).toHaveCount(0);
+  await expect(page.locator(".site-header .brand-logo")).toBeFocused();
+  await page.getByRole("link", { name: "Explore the collection", exact: true }).click();
+  await expect(page).toHaveURL(/\/shop/);
+  await expect(announcement).toHaveCount(0);
+  await page.reload();
+  await expect(announcement).toBeVisible();
 });
 
-test("reduced-motion marquee has a working explicit Play control and readable static messages", async ({ page }) => {
+test("reduced-motion announcements stay static, readable and dismissible without playback buttons", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   const announcement = page.locator(".announcement");
@@ -186,20 +192,11 @@ test("reduced-motion marquee has a working explicit Play control and readable st
   await expect(track).toHaveCSS("animation-name", "none");
   await expect(announcement.locator(".announcement-static")).toBeVisible();
   await expect(announcement.locator(".announcement-static > span")).toHaveCount(3);
-  await announcement.getByRole("button", { name: "Play announcement" }).click();
-  await expect(track).toBeVisible();
-  await expect(announcement.locator(".announcement-static")).not.toBeVisible();
-  await expect(track).toHaveCSS("animation-play-state", "running");
-  await expect(track).toHaveCSS("animation-iteration-count", "infinite");
-  const offset = () => track.evaluate((element) => new DOMMatrix(getComputedStyle(element).transform).m41);
-  const started = await offset();
-  await expect.poll(async () => Math.abs((await offset()) - started)).toBeGreaterThan(20);
-  await announcement.getByRole("button", { name: "Pause announcement" }).click();
-  await expect(track).not.toBeVisible();
-  await expect(announcement.locator(".announcement-static")).toBeVisible();
-  await expect(announcement.getByRole("button", { name: "Play announcement" })).toBeVisible();
+  await expect(announcement.getByRole("button", { name: /pause|play|start|stop/i })).toHaveCount(0);
   await announcement.getByRole("link").click();
   await expect(page).toHaveURL(/\/#featured-event$/);
+  await announcement.getByRole("button", { name: "Dismiss announcements" }).click();
+  await expect(announcement).toHaveCount(0);
 });
 
 test("homepage editor is visibly read-only in demo mode and never publishes", async ({ page, request }) => {
@@ -254,18 +251,20 @@ test("hamper details show supplied price, contents and full sheet; quantity carr
   await page.getByRole("button", { name: "Request a quote", exact: true }).click();
   await expect(page).toHaveURL(/\/corporate\?product=rc-017&quantity=25#enquiry/);
   await expect(page.getByLabel("Your catalogue selection")).toHaveValue("rc-017");
-  await expect(page.getByLabel("How many thoughtful gifts?")).toHaveValue("25");
+  await expect(page.getByLabel("Number of gifts")).toHaveValue("25");
   await expect(page.getByLabel("Budget per gift (₹)")).toHaveValue("1299");
 });
 
 test("wishlist saves and removes catalogue gifts without retaining contact information", async ({ page }) => {
   await page.goto("/shop");
   await page.getByRole("button", { name: "Save Single Premium Box to wishlist", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Saved Single Premium Box. Remove from wishlist", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("status")).toContainText("Saved to your wishlist.");
   await page.goto("/wishlist");
   await page.reload();
   await expect(page.locator(".product-card")).toHaveCount(1);
   expect(await page.evaluate(() => localStorage.getItem("ruvaani-wishlist-v1"))).toBe('{"wishlist":["rc-017"]}');
-  await page.getByRole("button", { name: "Remove Single Premium Box from wishlist", exact: true }).click();
+  await page.getByRole("button", { name: "Saved Single Premium Box. Remove from wishlist", exact: true }).click();
   await expect(page.getByRole("heading", { name: "A little room for your favorites." })).toBeVisible();
 });
 
@@ -295,7 +294,7 @@ test("corporate enquiry preview does not send or save personal details", async (
   await page.getByLabel("Mobile number").fill("9876543210");
   await page.getByRole("combobox", { name: "The occasion", exact: true }).selectOption("Diwali");
   await page.getByLabel("Your ideal delivery date").fill("2099-10-01");
-  await page.getByLabel("Where are they headed?").fill("Bengaluru");
+  await page.getByLabel("Delivery locations").fill("Bengaluru");
   await page.getByRole("checkbox", { name: /I agree to be contacted/ }).check();
   await page.getByRole("button", { name: "Preview my gifting enquiry" }).click();
   await expect(page.getByRole("heading", { name: "Your thoughtful brief looks lovely." })).toBeVisible();
@@ -323,7 +322,7 @@ test("invalid quote presets are explained rather than silently accepted", async 
   await page.goto("/corporate?product=rc-999&quantity=1#enquiry");
   await expect(page.locator(".corporate-form").getByRole("alert")).toContainText("Some details in this enquiry link were invalid");
   await expect(page.getByLabel("Your catalogue selection")).toHaveValue("");
-  await expect(page.getByLabel("How many thoughtful gifts?")).toHaveValue("10");
+  await expect(page.getByLabel("Number of gifts")).toHaveValue("10");
 });
 
 test("header search, mobile navigation and unavailable product routes remain usable", async ({ page }, info) => {

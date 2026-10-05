@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { ArrowUpRight, Check, Send } from "lucide-react";
 import { quoteSchema, type QuotePrefill } from "@/lib/validation";
@@ -38,22 +39,22 @@ export function CorporateForm({ initial = {}, warning = "" }: { initial?: QuoteP
     {warning && <p className="form-error" role="alert">{warning}</p>}
     <div className="form-grid">
       <label className="span-two">Your catalogue selection<select name="product" value={productId} onChange={(event) => { setProductId(event.target.value); const selected = catalogueProducts.find((product) => product.id === event.target.value); if (selected?.cataloguePrice) setBudget(selected.cataloguePrice / 100); }}><option value="">A bespoke collection / not decided yet</option>{catalogueProducts.map((product) => <option value={product.id} key={product.id}>{product.name}</option>)}</select></label>
-      <label>Your full name<input name="name" autoComplete="name" placeholder="A little introduction" required minLength={2} maxLength={100} /></label>
-      <label>Company name<input name="company" autoComplete="organization" placeholder="Your wonderful team" required minLength={2} maxLength={150} /></label>
+      <label>Your full name<input name="name" autoComplete="name" placeholder="Full name" required minLength={2} maxLength={100} /></label>
+      <label>Company name<input name="company" autoComplete="organization" placeholder="Company or organisation" required minLength={2} maxLength={150} /></label>
       <label>Work email<input name="email" type="email" autoComplete="email" placeholder="you@company.com" required maxLength={254} /></label>
       <label>Mobile number<input name="phone" type="tel" inputMode="numeric" autoComplete="tel-national" placeholder="10-digit Indian number" required pattern="[6-9][0-9]{9}" maxLength={10} /></label>
       <label htmlFor="enquiry-occasion">The occasion<select id="enquiry-occasion" name="occasion" aria-label="The occasion" required defaultValue={initial.occasion ?? ""}><option value="" disabled>What are we celebrating?</option>{occasions.map((occasion) => <option key={occasion}>{occasion}</option>)}<option>Something else</option></select></label>
-      <label>How many thoughtful gifts?<input name="quantity" type="number" min={10} max={100000} value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} required /></label>
+      <label>Number of gifts<input name="quantity" type="number" min={10} max={100000} value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} required /></label>
       <label>Budget per gift (₹)<input name="budget" type="number" min={299} max={1000000} value={budget} onChange={(e) => setBudget(Number(e.target.value))} required /></label>
       <label>Your ideal delivery date<input name="deliveryDate" type="date" min={new Date().toISOString().slice(0, 10)} required /></label>
-      <label className="span-two">Where are they headed?<input name="locations" placeholder="One office in Bengaluru, or a little joy across India?" required minLength={2} maxLength={500} /></label>
+      <label className="span-two">Delivery locations<input name="locations" placeholder="City, office or multiple destinations" required minLength={2} maxLength={500} /></label>
       <label className="span-two">Anything else we should know?<textarea name="requirements" rows={3} maxLength={2000} defaultValue={initial.recipient ? `Gifts for: ${initial.recipient}.` : ""} placeholder="Your brand, their interests, a special little detail..." /></label>
     </div>
     <label className="checkbox-label"><input type="checkbox" name="personalization" defaultChecked />I&apos;d love to include our branding or a personal message.</label>
     <div className="quote-estimate"><span>Your starting gift budget</span><strong>{new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(quantity * budget)}</strong><small>Planning estimate only. Your final quote includes confirmed customization, tax and delivery.</small></div>
-    <label className="checkbox-label consent"><input name="consent" type="checkbox" required />I agree to be contacted about this gifting enquiry. My details will be handled according to the privacy information.</label>
+    <label className="checkbox-label consent"><input name="consent" type="checkbox" required /><span>I agree to be contacted about this gifting enquiry. See how my details are handled in the <Link href="/policies/privacy">privacy information</Link>.</span></label>
     {error && <p className="form-error" role="alert">{error}</p>}
-    <button className="button button-primary full-width" disabled={busy}>{busy ? "Saving your thoughtful brief..." : demo ? "Preview my gifting enquiry" : "Let's make something meaningful"}<ArrowUpRight size={18} /></button>
+    <button className="button button-primary full-width" disabled={busy}>{busy ? "Sending enquiry..." : demo ? "Preview my gifting enquiry" : "Send quote enquiry"}<ArrowUpRight size={18} /></button>
     <p className="form-footnote">{demo ? "Preview only. No real enquiry is created." : "This is an enquiry, not a confirmed order or price commitment."}</p>
   </form>;
 }

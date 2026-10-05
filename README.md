@@ -80,14 +80,26 @@ No database, Razorpay account or API key is needed to browse the catalogue.
 
 The homepage order is **scrolling marquee → logo/navigation → featured event →
 brand slogans → remaining content**. Diwali is the initial featured event.
-The marquee repeats three distinct messages at a readable speed, with a visible
-Play/Pause control and keyboard-focus pause. Hover no longer stops it.
-Reduced-motion visitors initially see all messages as static text, but can
-explicitly choose Play; other page animations continue to respect their preference.
+The marquee repeats three distinct messages automatically, with no Play/Pause
+buttons. Keyboard focus pauses it for reading; hover does not stop it. A compact
+dismiss button hides the strip until a full reload, including during in-app
+navigation, and returns focus to the home logo. Dismissal is not saved to browser
+storage. Reduced-motion visitors see every message as static text.
 The full-width pink/peach event backdrop has original botanical line details and
 a wider image layout, instead of leaving bare gutters around a dark-green card.
 The event uses supplied catalogue photography, not third-party promotional art.
 The newer Diwali poster is a palette reference, not a replacement price list.
+
+The storefront uses a 16px body/form scale, readable secondary copy and at least
+44px key touch targets. On small phones, gift cards stack rather than compress
+their descriptions or actions. Save/Saved buttons provide a visible wishlist state;
+Request a quote remains the primary action, not an Add to cart checkout.
+Occasion cards promote existing corporate, wedding and festive gifting. They do
+not advertise invented discounts, coupon codes, limited-stock or expiry claims.
+Event descriptions, full gift descriptions, the five-step enquiry process and
+policy details remain available through expandable sections. Policy pages show
+plain-language summaries but retain their original details and explicit
+unfinished-policy warnings; this presentation is not finalized legal policy.
 
 ### Change the featured event and marquee
 
