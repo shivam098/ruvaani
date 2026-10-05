@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  distDir: process.env.RUVAANI_INTEGRATION_TEST === "1" ? ".next-integration" : ".next",
   poweredByHeader: false,
   async headers() {
     return [{

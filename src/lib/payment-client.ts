@@ -31,7 +31,7 @@ export async function completePayment(order: PaymentOrder, prefill: PaymentPrefi
     const instance = new Razorpay({
       key: order.keyId, amount: order.amount, currency: "INR", name: "RUVAANI",
       order_id: order.orderId, description: `Your thoughtful gifts · ${order.number}`,
-      prefill, theme: { color: "#613b42" },
+      prefill, theme: { color: "#064c3c" },
       handler: async (response) => {
         try {
           const confirmation = await apiRequest<{ number: string }>("/api/payments/verify", response);

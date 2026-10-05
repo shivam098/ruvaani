@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { calculateCart, cartLineKey, filterProducts, FREE_SHIPPING_THRESHOLD, PERSONALIZATION_FEE, SHIPPING_FEE } from "../src/lib/commerce";
-import { demoProducts } from "../src/lib/catalog-data";
+import { demoProducts } from "./fixtures/products";
 import { addressSchema, cartLineSchema, checkoutSchema, quoteSchema, registerSchema } from "../src/lib/validation";
 import { hashPassword, verifyPassword } from "../src/lib/password";
 import { verifySignature } from "../src/lib/razorpay";

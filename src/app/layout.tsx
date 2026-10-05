@@ -21,8 +21,8 @@ const serif = Cormorant_Garamond({
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
-  title: { default: "RUVAANI | Thoughtful gifts. Lasting moments.", template: "%s | RUVAANI" },
-  description: "Discover thoughtfully curated gift hampers, personalized keepsakes and corporate gifts. A little thought. A lasting impression.",
+  title: { default: "RUVAANI | Gifts that create lasting moments", template: "%s | RUVAANI" },
+  description: "Thoughtfully crafted, beautifully gifted. Explore RUVAANI's curated corporate hampers, festive keepsakes and custom presentation. Request a personalised quotation.",
   openGraph: { type: "website", siteName: "RUVAANI", locale: "en_IN", images: ["/opengraph-image"] },
   twitter: { card: "summary_large_image" },
   robots: isDemoMode() ? { index: false, follow: false } : { index: true, follow: true },

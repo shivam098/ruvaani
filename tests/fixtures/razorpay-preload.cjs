@@ -2,7 +2,10 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 const { randomBytes } = require("node:crypto");
 const originalFetch = globalThis.fetch;
-const orders = new Map();
+const orders = new Map([
+  ["order_1111111111111111", { amount: 519600 }],
+  ["order_2222222222222222", { amount: 99800 }],
+]);
 
 globalThis.fetch = async function(input, init) {
   const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
