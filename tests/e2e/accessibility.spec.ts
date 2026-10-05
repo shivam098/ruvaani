@@ -4,7 +4,7 @@ import AxeBuilder from "@axe-core/playwright";
 test("essential pages pass automated WCAG A/AA checks", async ({ page }) => {
   test.setTimeout(90000);
   const failures = [];
-  for (const route of ["/", "/shop", "/products/the-signature-hamper", "/corporate", "/gift-finder", "/account"]) {
+  for (const route of ["/", "/shop", "/products/single-premium-box", "/corporate", "/gift-finder", "/account", "/contact"]) {
     await page.goto(route);
     const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
     for (const violation of results.violations) {

@@ -20,7 +20,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const schema = {
     "@context": "https://schema.org", "@type": "Product", name: product.name, description: product.description,
     sku: product.id, brand: { "@type": "Brand", name: "RUVAANI" },
-    offers: { "@type": "Offer", priceCurrency: "INR", price: product.price / 100, availability: product.stock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock", url: `${siteUrl()}/products/${product.slug}` },
+    image: `${siteUrl()}${product.image}`, url: `${siteUrl()}/products/${product.slug}`,
   };
   return <div className="wrap product-page"><div className="breadcrumb"><Link href="/">Home</Link><span>/</span><Link href="/shop">The collection</Link><span>/</span><span>{product.name}</span></div>{!isDemoMode() && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, "\\u003c") }} />}<ProductDetails product={product} /><section className="section"><div className="section-heading"><div><span className="eyebrow">A FEW MORE THOUGHTFUL FINDS</span><h2>You might also <em>love.</em></h2></div><Link href="/shop" className="text-link">Explore all gifts</Link></div><div className="product-grid">{products.filter((p) => p.id !== product.id).slice(0, 4).map((p) => <ProductCard key={p.id} product={p} />)}</div></section></div>;
 }

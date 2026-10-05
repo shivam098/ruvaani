@@ -1,307 +1,214 @@
 # RUVAANI
 
-**Thoughtful gifts. Lasting moments.**
+**Gifts that create lasting moments.**
 
-A responsive gifting storefront based on the approved launch MVP of the RUVAANI Corporate & Festival Gifting PRD. Warm ivory, burgundy, editorial typography, original gift illustrations, and considered mobile layouts.
+A responsive, quote-first gifting catalogue with the supplied RUVAANI logo,
+cream/emerald/gold/ruby palette, and a minimal editorial hero using supplied
+hamper imagery.
 
 **Visual previews:** [Desktop homepage](docs/home-desktop.png) · [Mobile homepage](docs/home-mobile.png).
 
-> **Safe by default:** `DEMO_MODE=true`. Explore the complete storefront without any credentials. Demo checkout and corporate enquiry previews do not submit or save contact/address details, take payments, or place real orders.
+> **Current scope:** the owner approved replacing the original illustrative
+> retail shop with a quote-only catalogue. Direct checkout is disabled in both
+> demo and database modes. This is not the full marketplace from the original PRD.
 >
-> **This is an MVP, not the full five-phase marketplace or a production-ready payments launch.** Database-backed features and the Razorpay test-mode integration are implemented. Live Razorpay keys are deliberately rejected until the production launch requirements below are completed.
+> **Safe default:** `DEMO_MODE=true`. The catalogue and wishlist work without
+> credentials. The enquiry form is explicitly a preview: it does not send or save
+> personal details. The published phone links can be used for real enquiries.
+
+## Catalogue and brand sources
+
+- `RUVAANI Creation.pdf`: 16 named products/presentation options from page 5,
+  a minimum enquiry of 10 gifts, business contact details and the
+  Select → Customise → Approve → Produce → Deliver process.
+- Three additional owner-supplied sheets:
+  - **Single Premium Box:** ₹1,299.
+  - **Corporate Hamper:** ₹1,599.
+  - **Executive Corporate Hamper:** ₹2,199.
+- Package contents and prices are transcribed from the sheets. Full sheets are
+  available on those product pages. Prices are catalogue references, not final
+  checkout prices; tax, branding, availability and delivery require confirmation.
+- The remaining 16 entries have **no invented prices, stock, weights or capacities**.
+  Presentation options are not represented as automatically included products.
+- This is a partial catalogue, not a claim that the full range has been supplied.
+- Brand imagery is cropped from the supplied logo. Product images are cropped
+  from the supplied PDF/sheets and optimized as local WebP files; no third-party
+  image-generation or document-processing service is used.
+- All three owner-approved contact numbers are shown as telephone links.
+  A definitive WhatsApp destination is not inferred; set the optional environment
+  variable after confirming it.
+
+`src/lib/catalog-data.ts` is the public catalogue's source of truth in **both**
+deployment modes. `CatalogueItem` intentionally has no checkout price or stock
+fields. Its optional `cataloguePrice` uses integer **paise**. Source attribution
+is retained per entry.
+
+The catalogue is read-only in the operations UI; changes are made in source,
+reviewed and deployed. The old database product collection does not override it.
+Original priced products exist only in test fixtures.
 
 ## Stack
 
-- Next.js 16 App Router and React 19, with TypeScript.
-- Tailwind CSS 4 plus a custom responsive design system.
-- MongoDB Atlas and Mongoose, using the Node.js runtime.
-- Server-backed, revocable sessions in HttpOnly cookies; salted scrypt password hashes.
-- Razorpay standard checkout: trusted server pricing, HMAC verification, captured-payment verification, and idempotent webhook processing.
-- Zod validation, Lucide icons, original SVG product artwork.
-- Node tests, an isolated MongoDB integration suite, and Playwright desktop/mobile checks.
+- Next.js App Router, React, TypeScript.
+- Tailwind CSS and a custom responsive design system.
+- Local images rendered with `next/image`.
+- MongoDB/Mongoose for accounts, sessions, enquiries and existing orders.
+- Zod input validation, revocable HttpOnly sessions, salted scrypt passwords,
+  same-origin API checks and database-backed rate limiting.
+- Node unit tests, isolated MongoDB integration tests, and Playwright desktop,
+  mobile and accessibility checks.
 
-The exact installed versions are in `package-lock.json`. The framework is pinned to a stable release rather than the registry's canary tag.
+Exact versions are recorded in `package-lock.json`; use Node.js **24.x**.
 
-## 1. Run locally
-
-Install **Node.js 24 LTS**, npm, and Git. No MongoDB, payment account, Docker, or API key is needed for the demo.
-
-From an existing local project:
+## Local setup
 
 ```powershell
 Set-Location 'C:\Users\kumarshiv\Downloads\web dev\ruvaani'
 npm ci
-Copy-Item .env.example .env.local
+if (!(Test-Path .env.local)) { Copy-Item .env.example .env.local }
 npm run dev
 ```
 
-Open **http://localhost:3000**.
+Open `http://localhost:3000`. Keep an existing `.env.local`; do not overwrite it.
+The repository is private: clone `shivam098/ruvaani` with the owner's authorized
+GitHub account when setting up another machine.
 
-If you already have `.env.local`, keep it; do not overwrite its configuration.
+No database, Razorpay account or API key is needed to browse the catalogue.
 
-From another machine, first clone the private repository using the `shivam098` account:
-
-```powershell
-gh auth login
-gh repo clone shivam098/ruvaani
-Set-Location .\ruvaani
-npm ci
-Copy-Item .env.example .env.local
-npm run dev
-```
-
-For a local production build:
-
-```powershell
-npm run build
-npm run start
-```
-
-### What works without setup?
-
-| Journey | Demo behavior |
+| Journey | Current behavior |
 |---|---|
-| Homepage, collections, search, filters, sorting, pagination | Eight clearly illustrative gifts |
-| Product details and quick look | Product content, availability, gift contents, message-card preview |
-| Personalization | Name/message, with a sample per-gift surcharge |
-| Gift bag and wishlist | Persist in this browser; no account required |
-| Checkout | Validates sample address details and shows an explicit preview-complete screen; no API submission |
-| Corporate enquiry | Validates a sample brief and displays a preview, not a submitted enquiry |
-| Gift finder | Deterministic recipient/occasion/budget matches from actual catalogue entries |
-| Account | Sign-in and registration disabled with setup explanation |
-| Operations `/admin` | Read-only catalogue; no fabricated orders, customers, or revenue |
+| Homepage and collection | 19 sourced catalogue entries, search, categories, alphabetical sort and pagination |
+| Product details / quick look | Supplied imagery, package contents where provided, prices on request or labelled catalogue references |
+| Request a quote | Selected item and validated quantity carry into the enquiry; 10-unit minimum |
+| Wishlist | Browser-local item IDs under `ruvaani-wishlist-v1`; no names or addresses |
+| Gift finder | Recipient, occasion and indicative budget carry into the brief; no unverified budget/stock matching |
+| Contact | All three supplied telephone numbers; optional configured WhatsApp |
+| Enquiry in demo mode | Explicit non-submitting preview with telephone alternatives |
+| Enquiry in database mode | Validated, rate-limited persistence with consent, reference number and server-resolved item name |
+| Operations | Read-only public catalogue; authenticated enquiry and existing-order operations |
+| Old `/cart` and `/checkout` links | Redirect to the enquiry form |
+| Direct `POST /api/checkout` | HTTP 410; no order, provider request or stock reservation |
 
-Do not put sensitive information in gift notes. Bag selections and gift notes are stored in the browser. Clear the bag on a shared device.
+Old demo bag data is left untouched but is not reused as catalogue selections.
+Original retail IDs and new `rc-*` catalogue IDs never alias one another.
 
-## 2. Enable database-backed accounts and enquiries
+## Enable database-backed enquiries and accounts
 
-1. Create a MongoDB Atlas project and cluster. Use a replica set that supports transactions; a standalone local MongoDB process is not sufficient.
-2. Create a dedicated database user with only the necessary access to the `ruvaani` database.
-3. In Atlas **Network Access**, allow your current public IP for local development.
-4. Copy the driver's connection string into `.env.local`. URL-encode any reserved characters in the database password.
-5. Set:
+1. Create an Atlas replica-set deployment and a dedicated least-privilege user.
+2. Configure authorized network access for the machine or Vercel deployment.
+   A laptop IP allowlist does not cover Vercel's outbound connections. Use an
+   appropriate controlled networking arrangement, not an indiscriminate
+   all-internet allowlist.
+3. Set your ignored `.env.local` or Vercel environment settings:
 
 ```dotenv
 DEMO_MODE=false
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
-MONGODB_URI=mongodb+srv://YOUR_USER:YOUR_URL_ENCODED_PASSWORD@YOUR_CLUSTER/
+MONGODB_URI=your-private-atlas-connection-string
 MONGODB_DB=ruvaani
 ```
 
-6. Initialize required unique, lookup, and expiry indexes, and seed the sample catalogue:
+4. Run `npm run db:seed` once against that database. The historical script name is
+   retained, but it now **creates indexes only**. It does not insert demo products,
+   overwrite existing records or reset inventory.
+5. Restart/redeploy. Submit an enquiry and retain its returned reference.
 
-```powershell
-npm run db:seed
-```
+Database mode does **not** enable direct purchases. No Razorpay keys are required
+for enquiries or accounts.
 
-The seed is insertion-only: rerunning it does not reset existing stock, prices, or product content. Indexes are required for sessions, rate limits, and order idempotency. They are created by the seed command, not automatically on each serverless request.
+### Administrator provisioning
 
-7. Restart the dev server. Register a customer at `/account`, submit an enquiry at `/corporate`, and inspect it from an administrator account.
-
-Live-mode catalogue reads are request-time reads. Connection errors are shown rather than silently replaced by demo data.
-
-### Create an administrator
-
-Temporarily add these values to your local, ignored `.env.local`:
-
-```dotenv
-ADMIN_EMAIL=your-real-admin-email
-ADMIN_NAME=Your Name
-ADMIN_PASSWORD=use-a-unique-long-password
-```
-
-Use at least 12 characters, then run:
+Temporarily set `ADMIN_EMAIL`, `ADMIN_NAME` and a unique `ADMIN_PASSWORD` of at
+least 12 characters in the ignored local `.env.local`, then run:
 
 ```powershell
 npm run admin:create
 ```
 
-Remove `ADMIN_PASSWORD` afterward. The command will not silently promote or replace an existing account.
+Remove the administrator password afterward. The script refuses to overwrite or
+silently promote an existing user. Sign in at `/account`, then open `/admin`.
 
-Sign in normally at `/account`, then open `/admin`. Administrators can:
+Enquiries show the selected item, requested quantity and budget, contact
+information and requirements. Status changes are authenticated and audited.
 
-- Edit available product stock and publication status.
-- Read corporate enquiry details and update their review status.
-- Advance paid orders through confirmed, processing, shipped, and delivered.
+## Vercel deployment
 
-Mutations require an authenticated `ADMIN`, a same-origin request, validation, and a transaction-backed audit record. Customers cannot gain administrator privileges through registration.
+1. In Vercel's dashboard, import the private `shivam098/ruvaani` repository.
+   Authorize the Vercel GitHub App for that specific repository.
+2. Use **Next.js**, repository root, **Node.js 24.x**, install command `npm ci`,
+   build command `npm run build`, and the standard framework output.
+3. Set `DEMO_MODE=true` for a catalogue/form-preview deployment.
+4. Deploy, then set `NEXT_PUBLIC_SITE_URL` to the actual stable HTTPS project
+   domain and redeploy. Do not assume a particular `vercel.app` name is available.
+5. For real enquiry persistence, configure Atlas and database variables as above,
+   create the indexes, provision the administrator and set `DEMO_MODE=false`.
+6. Keep preview and production database configuration separate. Configure a
+   custom domain in Vercel settings if desired; update the site URL and redeploy.
 
-**Available stock means unreserved stock.** Do not overwrite it with a physical stock count without reconciling pending order reservations.
+No `vercel.json`, custom output directory or separate Express server is needed.
+Pushing `main` may trigger a deployment if the owner connected the Git integration;
+a successful push alone does not verify a Vercel deployment.
 
-## 3. Connect Razorpay in test mode
+### Environment reference
 
-Create or use a Razorpay merchant account, select **Test Mode**, and generate test API keys.
-
-Add only to `.env.local` or encrypted Vercel environment settings:
-
-```dotenv
-RAZORPAY_KEY_ID=rzp_test_your_key_id
-RAZORPAY_KEY_SECRET=your_test_key_secret
-RAZORPAY_WEBHOOK_SECRET=a_separate_random_webhook_secret
-```
-
-Do not prefix secrets with `NEXT_PUBLIC_`. Never commit `.env.local`.
-
-1. Configure automatic capture in Razorpay's payment capture settings.
-2. Register a customer and add a gift to the bag.
-3. Checkout creates a provider order using catalogue prices read on the server.
-4. A MongoDB transaction reserves available stock and inserts a uniquely keyed local order.
-5. The Razorpay payment window opens.
-6. The server checks the checkout signature and fetches the payment from Razorpay to confirm the matching order, exact amount, INR currency, and `captured` status.
-7. `/account` shows the order. **Check / resume payment** resumes the same pending provider order without reserving stock again.
-
-Never trust a browser-only success message or a client-provided price.
-
-### Webhook
-
-After deploying an HTTPS test environment, configure:
-
-```text
-https://YOUR_DOMAIN/api/webhooks/razorpay
-```
-
-Subscribe to **`payment.captured`**, and set the same separate webhook secret in the dashboard and environment.
-
-The endpoint verifies the signature against the original body and fetches the captured payment from the provider. Its conditional pending-to-paid update is idempotent, so duplicate webhooks and browser verification do not duplicate orders or subtract stock again.
-
-Local webhook testing requires a deliberately configured public HTTPS tunnel or a Vercel test deployment. This project does not expose your local machine automatically. If a Vercel preview is access-protected, configure appropriate webhook access; a protected endpoint cannot receive ordinary Razorpay callbacks.
-
-### Important payment limitation
-
-Pending checkouts retain their stock reservation. They can be resumed, but there is **no automatic reservation expiry, cancellation, or refund workflow** yet. Do not simply return stock to inventory while a provider order can still accept a late payment.
-
-Before a real-money launch, implement provider-aware abandonment reconciliation, expiry/cancellation, late-payment handling, refunds, and operational alerts. Only then remove the explicit test-key-only guard in `src/lib/razorpay.ts` after review and UAT. Setting `DEMO_MODE=false` alone does **not** enable live payments.
-
-## 4. Deploy the demo to Vercel
-
-1. Sign in to Vercel and connect the GitHub account **`shivam098`**.
-2. Grant the Vercel GitHub integration access to the private **`shivam098/ruvaani`** repository.
-3. Select **Add New -> Project -> Import** and select `ruvaani`.
-4. Use **Next.js**, the repository root, and **Node.js 24.x**. Keep the standard output settings. Build command: `npm run build`; install command: `npm ci`.
-5. Add these environment variables for the environment you are deploying:
-
-| Variable | Demo value |
+| Variable | Purpose |
 |---|---|
-| `DEMO_MODE` | `true` |
-| `NEXT_PUBLIC_SITE_URL` | Your final HTTPS Vercel URL or custom domain |
-| `NEXT_PUBLIC_WHATSAPP_NUMBER` | Optional support number, country code + number, digits only |
+| `DEMO_MODE` | Only the exact string `false` enables database-backed operations |
+| `NEXT_PUBLIC_SITE_URL` | Actual site origin for metadata and origin checks |
+| `MONGODB_URI`, `MONGODB_DB` | Server-only database configuration |
+| `NEXT_PUBLIC_WHATSAPP_NUMBER` | Optional verified destination, digits with country code |
+| `ADMIN_EMAIL`, `ADMIN_NAME`, `ADMIN_PASSWORD` | Local administrator provisioning only |
+| `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` | Retained only for existing test-order reconciliation; not needed for the catalogue |
 
-6. Deploy. If you did not know the generated URL beforehand, update `NEXT_PUBLIC_SITE_URL` after the first deployment and **redeploy**.
-7. Open the homepage, collection, product detail, bag, checkout preview and corporate enquiry preview on both a desktop and a phone.
-8. For a custom domain, add it in Vercel project settings, follow the supplied DNS records, update `NEXT_PUBLIC_SITE_URL`, and redeploy.
+Never commit `.env.local` or put secrets in `NEXT_PUBLIC_*` variables.
 
-No `vercel.json`, custom output directory, separate Express server, database, or payment key is needed for the demo. This repository has not been automatically linked to a Vercel account or deployed on your behalf.
+## Existing payment data
 
-### Deploy a database-backed test environment
+The quote-first change does not delete existing orders, sessions, product records,
+or reservations. Existing-order payment verification, signed webhook handling,
+customer-scoped resume and paid-order fulfilment remain available for continuity.
+They cannot create a new checkout order. Test keys remain mandatory.
 
-Keep a separate Atlas database and Razorpay test account configuration from production.
+The former retail checkout implementation remains in Git history. Restoring it is
+a separate, explicitly approved implementation task, not a configuration toggle.
+Safe cancellation, reservation expiry, refunds and late-payment reconciliation
+are still required before any real-money checkout launch.
 
-- Set `DEMO_MODE=false`.
-- Add `MONGODB_URI`, `MONGODB_DB`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, and `RAZORPAY_WEBHOOK_SECRET`.
-- Seed that exact database once from your machine, and provision its administrator using the commands above.
-- Configure Atlas network access for the Vercel project's outbound connections. Do not assume the IP allowed for your laptop covers Vercel.
-- Prefer controlled outbound IPs or an appropriate secure networking arrangement. Do not casually open Atlas to every internet address. Use a dedicated least-privilege database user and strong credentials.
-- Choose a Vercel function region near your Atlas cluster.
-- Redeploy after changing mode or environment values. Use the exact deployed origin for `NEXT_PUBLIC_SITE_URL`.
-- Confirm webhook accessibility, capture configuration, and end-to-end Razorpay test transactions.
-
-## Environment reference
-
-| Variable | Required when | Purpose |
-|---|---|---|
-| `DEMO_MODE` | Explicitly recommended | Defaults to `true`; only the exact string `false` enables server persistence |
-| `NEXT_PUBLIC_SITE_URL` | Deployment | Canonical URLs, metadata, and allowed browser origin |
-| `MONGODB_URI` | Database mode | Private Atlas connection string |
-| `MONGODB_DB` | Database mode | Defaults to `ruvaani` |
-| `RAZORPAY_KEY_ID` | Test checkout | Server-side test key ID, returned only when opening checkout |
-| `RAZORPAY_KEY_SECRET` | Test checkout | Private provider API/HMAC secret |
-| `RAZORPAY_WEBHOOK_SECRET` | Webhooks | Separate private webhook signing secret |
-| `NEXT_PUBLIC_WHATSAPP_NUMBER` | Optional | Enables a support link; not WhatsApp Business API messaging |
-| `ADMIN_EMAIL`, `ADMIN_NAME`, `ADMIN_PASSWORD` | Local provisioning only | Used only by `admin:create`; remove the password after use |
-
-## Development checks
+## Checks
 
 ```powershell
-npm run lint
 npm run typecheck
+npm run lint
 npm test
-npm run build
-npx playwright install chromium
-npm run test:e2e
 npm run test:backend
+npm run build
+npm run test:e2e
 ```
 
-- Unit tests cover totals, thresholds, personalization, cumulative stock, schema rejection, passwords, and HMAC checks.
-- Browser tests use port **3100**, start/stop a local production server, and cover desktop/mobile journeys. They require a preceding demo-mode build.
-- Backend integration tests start an **isolated temporary MongoDB replica set** and a dev server on port **3101**, then stop both. The first run downloads a MongoDB test binary. They test real database-backed authentication, permissions, quotes, reservation races, order idempotency and webhook handling against an explicit **Razorpay test double**, not the external payment service. They never use your Atlas database.
-- Automated accessibility checks are not a substitute for manual screen-reader and keyboard evaluation.
-- Screenshots and traces are local in ignored `test-results`; do not commit reports containing customer information.
+- Unit tests cover catalogue sources/assets, exact provided package prices,
+  quote-prefill boundaries and preserved legacy commerce helpers.
+- Backend tests use an isolated temporary MongoDB replica set and a Next.js server on port 3101
+  and an explicit test-process-only Razorpay double. They cover live enquiries,
+  checkout rejection without side effects and existing-order continuity.
+  The test server uses `.next-integration` so an existing local development server
+  does not need to be stopped.
+- Browser tests use a production server on port 3100 after a build and cover
+  desktop/mobile layouts, logos/images, catalogue actions, quote prefills,
+  demo non-submission, contacts and accessibility.
+- Tests never use a real Atlas database or charge a payment.
 
-### Known development dependency advisory
+## Remaining work
 
-At implementation, `npm audit --omit=dev` reported no production dependency advisories. The lint dependency chain (`eslint-config-next -> fast-glob -> micromatch -> braces`) had five high-severity audit entries from one unfixed nested-pattern advisory. These packages are development tooling, not customer-facing runtime dependencies. Do not use `npm audit fix --force` to downgrade the application framework; update compatible lint tooling when a fix is available.
+Confirm the final catalogue, images/specifications, tax and delivery treatment,
+primary contact and WhatsApp number. The business must approve its final policies.
+The brochure's payment terms are described as requiring confirmation, not
+implemented as an online payment facility.
 
-## Project map
+Real enquiry persistence still needs Atlas configuration. Email/SMS notifications,
+formal quotation documents, full product/CMS editing, corporate accounts,
+recipient uploads, logistics, merchant onboarding/settlements, marketing/AI
+integrations and production operations are not added by this catalogue redesign.
 
-```text
-src\app                    Public pages, metadata and API route handlers
-src\components             Storefront, artwork, forms, cart and operations UI
-src\lib\catalog-data.ts     Illustrative catalogue; replace before launch
-src\lib\commerce.ts         Integer-paise totals and deterministic gift filtering
-src\lib\models.ts          MongoDB schemas and indexes
-src\lib\auth.ts            Revocable server sessions and role checks
-src\lib\http.ts            Origin checks, payload limits, rate limits, API errors
-src\lib\razorpay.ts        Provider calls and captured-payment verification
-scripts                    Database initialization and admin provisioning
-tests                      Unit, isolated backend and browser checks
-public\images              Locally served licensed editorial photography
-```
-
-## What comes next from the PRD
-
-This iteration is the user-approved launch MVP, not every feature in the 28-page document.
-
-| Later phase | Not implemented in this MVP |
-|---|---|
-| Corporate platform | Company accounts, formal quote generation/approval, recipient CSV/XLSX upload, logo storage, multi-address fulfilment, invoices |
-| Merchant marketplace | KYC, vendor onboarding, product approval, merchant inventory/settlements/analytics |
-| Integrations | WhatsApp Business API, email/SMS, Meta Pixel/Conversions API, shipment carriers |
-| AI | LLM/semantic search, embeddings, AI content assistant; current gift finder is deterministic |
-| Extended commerce | Coupons, reviews, account recovery/email verification, CMS, automated refunds/returns/cancellations |
-
-### Production launch gates
-
-Before accepting real customers or real money:
-
-- Replace the illustrative catalogue, product artwork where necessary, stock, prices, tax rules, shipping rules and commercial copy with approved business data.
-- Publish finalized business identity, contact details, privacy/retention/deletion policies, terms, delivery commitments, cancellation and refund policies. Current policy pages are explicitly development-stage notices.
-- Implement password recovery, email verification, customer support procedures, and appropriate administrative account protections.
-- Complete reservation expiry, cancellation, refund and late-payment reconciliation; verify failure and retry flows.
-- Configure order notifications, shipping carrier tracking and actual serviceability.
-- Define admin stock reconciliation rules. Do not treat the dashboard's latest-100 overview as financial accounting.
-- Add production observability and actionable server diagnostics without logging passwords, tokens or customer addresses. Current API errors log an incident ID and error class only.
-- Add an appropriate production CSP and operational abuse controls, complete independent security testing, and manually test accessibility.
-- Configure Atlas backups, retention, monitoring, restore testing, Vercel monitoring and alerting.
-- Complete Razorpay sandbox UAT with the real provider, webhook retry testing, and business approval before lifting the live-payment guard.
-
-## Visual assets
-
-Gift-product artwork and the wordmark treatment were created for this project in `src/components/gift-artwork.tsx`. They are illustrations, not photographs of shipped products.
-
-Editorial photography is locally downloaded from Unsplash under its free image license:
-
-- `gifting.jpg`: image `photo-1607344645866-009c320b63e0` (black gift boxes with gold ribbons).
-- `celebration.jpg`: image `photo-1513201099705-a9746e1e201f` (wrapped gift with pink ribbon).
-
-No customer testimonials, client logos, ratings or sales figures have been invented.
-
-## Official setup references
-
-- [Next.js installation](https://nextjs.org/docs/app/getting-started/installation)
-- [Next.js on Vercel](https://vercel.com/docs/frameworks/full-stack/nextjs)
-- [Vercel Node.js versions](https://vercel.com/docs/functions/runtimes/node-js/node-js-versions)
-- [Vercel environment variables](https://vercel.com/docs/environment-variables)
-- [MongoDB Atlas network access](https://www.mongodb.com/docs/atlas/security/ip-access-list/)
-- [Mongoose and Next.js](https://mongoosejs.com/docs/nextjs.html)
-- [Razorpay integration steps](https://razorpay.com/docs/payments/payment-gateway/web-integration/standard/integration-steps/)
-- [Unsplash license](https://unsplash.com/license)
+The previously documented development-tool advisory in the
+`eslint-config-next → fast-glob → micromatch → braces` chain is not addressed by
+this design change. Do not force a framework downgrade with `npm audit fix --force`.

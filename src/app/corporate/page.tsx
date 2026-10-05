@@ -1,14 +1,31 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowDownRight, ArrowUpRight, Building2, Gift, MapPin, PenLine, Users } from "lucide-react";
-import { GiftArtwork } from "@/components/gift-artwork";
 import { CorporateForm } from "@/components/corporate-form";
-export const metadata: Metadata = { title: "Corporate gifting, with a personal touch", description: "Thoughtful employee gifts, client thank-yous and festive hampers. Start your corporate gifting brief with RUVAANI." };
-export default function CorporatePage() {
+import { quotePrefillSchema } from "@/lib/validation";
+import { contactNumbers } from "@/lib/brand";
+
+export const metadata: Metadata = { title: "Corporate gifting, with a personal touch", description: "Curated corporate hampers, company branding and festive gifts. Request a RUVAANI quotation from 10 gifts." };
+const process = [
+  ["Select", "Choose your gifts, occasion and budget."],
+  ["Customise", "Discuss packaging, branding and your message."],
+  ["Approve", "Confirm the quotation and digital or sample presentation."],
+  ["Produce", "Your approved gifting selection is prepared."],
+  ["Deliver", "Delivery arrangements and timelines are confirmed with you."],
+];
+
+export default async function CorporatePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const params = await searchParams;
+  const prefill = quotePrefillSchema.safeParse(params);
   return <>
-    <section className="corporate-hero wrap"><div><span className="eyebrow">A LITTLE THOUGHT GOES A LONG WAY</span><h1>Good business.<br /><em>Great gestures.</em></h1><p>Your people make all the difference.<br />Let&apos;s give them something that says so.</p><a href="#enquiry" className="button button-primary">Let&apos;s create a thoughtful moment <ArrowDownRight size={18} /></a><div className="corporate-hero-note"><Users size={20} />For teams of 10, 100, or a whole lot more.</div></div><div className="corporate-hero-art"><GiftArtwork kind="hamper" color="#e8dfcf" /><span className="art-label">YOUR BRAND. THEIR MOMENT.</span></div></section>
-    <section className="corporate-value-strip"><div className="wrap"><span><PenLine />A personal touch</span><span><Gift />Curated to your budget</span><span><MapPin />Many happy destinations</span><span><Building2 />One dedicated gifting partner</span></div></section>
-    <section className="section wrap"><div className="section-heading centered"><span className="eyebrow">EVERY RELATIONSHIP DESERVES A LITTLE THOUGHT</span><h2>For every kind of <em>thank-you.</em></h2></div><div className="corporate-usecases">{[{ n: "01", title: "Hello, new teammate.", text: "Welcome kits that make day one feel like belonging.", kind: "desk" as const, color: "#e4e6db" }, { n: "02", title: "Here's to great partnerships.", text: "Thoughtful client gifts that go beyond business as usual.", kind: "hamper" as const, color: "#ede3d5" }, { n: "03", title: "A season worth sharing.", text: "Festive collections that celebrate your people, beautifully.", kind: "festive" as const, color: "#ebdddd" }].map((item) => <a key={item.n} className="corporate-usecase" href="#enquiry"><GiftArtwork kind={item.kind} color={item.color} /><div><span className="eyebrow">MOMENT {item.n}</span><h3>{item.title}</h3><p>{item.text}</p><ArrowUpRight size={20} /></div></a>)}</div></section>
-    <section id="enquiry" className="enquiry-section"><div className="wrap enquiry-grid"><div className="enquiry-copy"><span className="eyebrow">LET&apos;S PUT A LITTLE THOUGHT INTO IT</span><h2>A thoughtful<br />partnership<br /><em>starts here.</em></h2><p>Tell us about your people and your plans.<br />We&apos;ll take it from there, thoughtfully.</p><ol className="process-steps"><li><span>01</span><div><h3>A little about your people</h3><p>Share your occasion, budget and gifting wish list.</p></div></li><li><span>02</span><div><h3>A collection, just for you</h3><p>Our team reviews your brief and explores the details.</p></div></li><li><span>03</span><div><h3>Made meaningful, together</h3><p>Confirm your quote and personalization before ordering.</p></div></li></ol><Link href="/faq" className="text-link">A few questions, thoughtfully answered <ArrowUpRight size={16} /></Link></div><div className="enquiry-form-card"><CorporateForm /></div></div></section>
+    <section className="corporate-hero wrap"><div><span className="eyebrow">THOUGHTFUL GIFTS. MEANINGFUL CONNECTIONS.</span><h1>Your people.<br /><em>Your signature.</em></h1><p>Curated products, considered customisation and beautiful packaging. Gifts that feel as personal as the relationships behind them.</p><a href="#enquiry" className="button button-primary">Create your gifting brief <ArrowDownRight size={18} /></a><div className="corporate-hero-note"><Users size={20} />Minimum enquiry: 10 gifts.</div></div><div className="corporate-hero-art catalogue-corporate-hero"><Image src="/catalogue/executive-corporate-hamper.webp" alt="Executive corporate hamper in RUVAANI's cream, emerald, gold and ruby presentation" fill sizes="(max-width: 760px) 90vw, 45vw" /></div></section>
+    <section className="corporate-value-strip"><div className="wrap"><span><PenLine />Custom branding</span><span><Gift />Curated selections</span><span><MapPin />Delivery planning</span><span><Building2 />Premium presentation</span></div></section>
+    <section className="section wrap"><div className="section-heading centered"><span className="eyebrow">FROM THE FIRST THOUGHT TO THE FINAL RIBBON</span><h2>Made meaningful, <em>together.</em></h2></div><div className="corporate-usecases">{[
+      { title: "A warm welcome.", text: "Branded diaries, pens and everyday essentials.", image: "single-premium-box", href: "/products/single-premium-box" },
+      { title: "A thoughtful thank-you.", text: "Curated hampers for clients, teams and partners.", image: "corporate-hamper", href: "/products/corporate-hamper" },
+      { title: "A season to remember.", text: "Festive keepsakes, gourmet gifts and personal details.", image: "festive-collection", href: "/shop?category=Divine%20%26%20festive%20gifts" },
+    ].map((item) => <Link className="corporate-usecase" href={item.href} key={item.title}><div className="usecase-photo"><Image src={`/catalogue/${item.image}.webp`} alt={item.text} fill sizes="(max-width: 760px) 40vw, 30vw" /></div><div><h3>{item.title}</h3><p>{item.text}</p><ArrowUpRight size={20} /></div></Link>)}</div></section>
+    <section id="enquiry" className="enquiry-section"><div className="wrap enquiry-grid"><div className="enquiry-copy"><span className="eyebrow">LET&apos;S CREATE SOMETHING MEANINGFUL</span><h2>A thoughtful<br />partnership<br /><em>starts here.</em></h2><p>Tell us about your people and your plans. Your final quotation confirms contents, branding, availability, tax and delivery.</p><ol className="process-steps">{process.map(([title, text], index) => <li key={title}><span>0{index + 1}</span><div><h3>{title}</h3><p>{text}</p></div></li>)}</ol><div className="enquiry-contact"><span className="eyebrow">PREFER A CONVERSATION?</span><div className="contact-numbers">{contactNumbers.map((phone) => <a href={`tel:+91${phone}`} key={phone}>+91 {phone}</a>)}</div></div><Link href="/faq" className="text-link">A few thoughtful answers <ArrowUpRight size={16} /></Link></div><div className="enquiry-form-card"><CorporateForm key={JSON.stringify(params)} initial={prefill.success ? prefill.data : {}} warning={prefill.success ? "" : "Some details in this enquiry link were invalid. Please choose your selection and quantities again."} /></div></div></section>
   </>;
 }

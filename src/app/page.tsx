@@ -1,78 +1,58 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowDown, ArrowRight, ArrowUpRight, Check, Flower2, Gift, Heart, Leaf, Package, PenLine, Sparkles, Sun, Truck, Users } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Check, Flower2, Gift, Heart, Package, PenLine, Sparkles, Users } from "lucide-react";
 import { getProducts } from "@/lib/catalog";
+import { quoteHref } from "@/lib/catalog-data";
 import { ProductCard } from "@/components/product-card";
-import { GiftArtwork } from "@/components/gift-artwork";
+
+const collections = [
+  { label: "Curated hampers", category: "Curated hampers", icon: Gift, color: "sand", detail: "Good things, beautifully together" },
+  { label: "Festive keepsakes", category: "Divine & festive gifts", icon: Flower2, color: "sage", detail: "Light, blessings & celebration" },
+  { label: "Corporate essentials", category: "Corporate essentials", icon: PenLine, color: "rose", detail: "Your identity in every detail" },
+  { label: "Gourmet delights", category: "Gourmet & festive delights", icon: Package, color: "butter", detail: "A thoughtful taste of joy" },
+  { label: "Finishing touches", category: "Branding & presentation", icon: Sparkles, color: "olive", detail: "Beautifully, unmistakably yours" },
+];
 
 export default async function Home() {
   const products = await getProducts();
-  return (
-    <>
-      <section className="hero">
-        <div className="hero-copy">
-          <div className="hero-eyebrow"><span />THOUGHTFULLY CHOSEN. BEAUTIFULLY GIVEN.</div>
-          <h1>Some gifts<br />say <em>so much</em><br />more.</h1>
-          <p>For the people who matter. And the moments<br className="desktop-break" /> that deserve a little something special.</p>
-          <div className="hero-buttons"><Link href="/shop" className="button button-primary">Find your perfect gift <ArrowUpRight size={18} /></Link><Link href="/corporate" className="hero-secondary">Gifting for your team <ArrowRight size={17} /></Link></div>
-          <div className="hero-note"><span className="mini-gift"><Gift size={20} /></span><div>More than a gift. <strong>A feeling.</strong><span>Thoughtful details, from the first look to the last ribbon.</span></div></div>
+  return <>
+    <section className="premium-hero">
+      <div className="wrap premium-hero-grid">
+        <div className="premium-hero-copy">
+          <span className="premium-eyebrow">RUVAANI · CREATIONS & PACKAGING</span>
+          <h1>Gifts that create<br /><em>lasting moments.</em></h1>
+          <p>Considered gifts. Beautiful details.<br />For your people, your celebrations, and everything worth remembering.</p>
+          <div className="premium-hero-actions"><Link href="/shop" className="button button-primary">Explore the collection <ArrowUpRight size={18} /></Link><Link href="/corporate#enquiry" className="text-link">Create a bespoke gift <ArrowRight size={17} /></Link></div>
+          <div className="premium-hero-signature"><span />Thoughtfully crafted. Beautifully gifted.</div>
         </div>
-        <div className="hero-visual">
-          <Image src="/images/gifting.jpg" alt="Beautifully wrapped charcoal gift boxes with golden satin ribbons" fill priority sizes="(max-width: 760px) 100vw, 54vw" className="hero-photo" />
-          <div className="hero-photo-shade" />
-          <span className="hero-image-label">THE RUVAANI EDIT · EVERYDAY EXTRAORDINARY</span>
-          <div className="hero-roundel"><Sparkles size={20} /><span>SMALL GESTURES</span><strong>big feelings</strong><span>BEAUTIFULLY WRAPPED</span></div>
-          <div className="hero-floating-card"><span className="floating-card-icon"><Gift size={24} strokeWidth={1.4} /></span><div><span>A LITTLE BOX OF</span><p>“I thought of you.”</p></div><Link href="/shop?category=Hampers" aria-label="Explore gift hampers"><ArrowUpRight size={21} /></Link></div>
-          <span className="hero-caption">GOOD THINGS COME WITH A LITTLE THOUGHT.</span>
-        </div>
-        <a href="#discover" className="hero-scroll" aria-label="Discover our gifts"><ArrowDown size={17} /></a>
-      </section>
-
-      <section id="discover" className="occasion-strip"><div className="wrap">
-        <span>A GIFT FOR EVERY KIND OF MOMENT</span>
-        <div className="occasion-links">
-          {[[Sun, "Festive celebrations", "Diwali"], [Users, "A warm welcome", "Welcome aboard"], [Heart, "A heartfelt thank-you", "Thank you"], [Flower2, "Just because", "Just because"]].map(([Icon, label, occasion]) => {
-            const OccasionIcon = Icon as typeof Sun;
-            return <Link key={String(label)} href={`/shop?occasion=${encodeURIComponent(String(occasion))}`}><OccasionIcon size={22} strokeWidth={1.4} /><span>{String(label)}</span><ArrowUpRight size={14} /></Link>;
-          })}
-        </div>
-      </div></section>
-
-      <section className="section wrap categories-section">
-        <div className="section-heading"><div><span className="eyebrow">A WORLD OF THOUGHTFUL POSSIBILITIES</span><h2>What&apos;s your kind of <em>thoughtful?</em></h2></div><Link href="/shop" className="text-link">Explore all gifts <ArrowRight size={17} /></Link></div>
-        <div className="category-grid">
-          {[
-            { label: "Gift hampers", category: "Hampers", icon: Gift, color: "sand", detail: "Good things, together" },
-            { label: "Desk essentials", category: "Desk essentials", icon: PenLine, color: "sage", detail: "For the everyday inspired" },
-            { label: "Wellness & care", category: "Wellness", icon: Flower2, color: "rose", detail: "A moment just for them" },
-            { label: "Gourmet delights", category: "Gourmet", icon: Package, color: "butter", detail: "A taste of something lovely" },
-            { label: "Conscious gifts", category: "Eco-friendly", icon: Leaf, color: "olive", detail: "Thoughtful by nature" },
-          ].map(({ label, category, icon: Icon, color, detail }) => <Link className={`category-card ${color}`} key={label} href={`/shop?category=${encodeURIComponent(category)}`}><div className="category-icon"><Icon size={34} strokeWidth={1.15} /></div><h3>{label}</h3><p>{detail}</p><ArrowUpRight className="category-arrow" size={16} /></Link>)}
-        </div>
-      </section>
-
-      <section className="section wrap bestsellers-section">
-        <div className="section-heading"><div><span className="eyebrow">THE ONES THEY&apos;LL REMEMBER</span><h2>A few of our <em>favorites.</em></h2></div><Link href="/shop" className="text-link">Meet the whole collection <ArrowRight size={17} /></Link></div>
-        <div className="product-grid">{products.filter((p) => p.featured).slice(0, 4).map((p) => <ProductCard key={p.id} product={p} />)}</div>
-      </section>
-
-      <section className="corporate-feature wrap">
-        <div className="corporate-art"><div className="corporate-art-heading"><span className="eyebrow">GOOD PEOPLE. GREAT GESTURES.</span><p>Your brand.<br /><em>Their little moment.</em></p></div><GiftArtwork kind="desk" color="#e1e3d7" /><span className="corporate-art-tag"><PenLine size={14} /> YOUR BRAND, BEAUTIFULLY PRESENTED</span></div>
-        <div className="corporate-feature-copy"><span className="eyebrow">FOR THE PEOPLE BEHIND YOUR BUSINESS</span><h2>Big appreciation.<br /><em>Thoughtful scale.</em></h2><p>From your first ten teammates to a thousand thank-yous. Make every employee, client, and partner feel like your only one.</p><div className="corporate-benefits"><span><Check size={16} /> Your brand, their name</span><span><Check size={16} /> Curated for your budget</span><span><Check size={16} /> One team, many destinations</span><span><Check size={16} /> A dedicated gifting partner</span></div><Link href="/corporate" className="button button-light">Let&apos;s talk corporate gifting <ArrowUpRight size={18} /></Link><p className="corporate-footnote">Thoughtful gifting starts with a conversation.</p></div>
-      </section>
-
-      <section className="section wrap editorial-section">
-        <div className="section-heading"><div><span className="eyebrow">IT&apos;S THE LITTLE THINGS</span><h2>Ordinary moments.<br /><em>Extraordinary meaning.</em></h2></div><p className="section-description">A name on a notebook. Their favorite flavor.<br />A message that could only come from you.<br />That&apos;s where a good gift becomes their gift.</p></div>
-        <div className="editorial-grid">
-          <Link href="/shop?personalized=true" className="editorial-card personalized-card"><div><span className="eyebrow">UNIQUELY, UNMISTAKABLY THEIRS</span><h3>A little more <em>personal.</em></h3><span className="text-link">Put a little you into it <ArrowRight size={17} /></span></div><GiftArtwork kind="desk" color="#ede8df" /></Link>
-          <Link href="/shop?occasion=Diwali" className="editorial-card festive-card"><Image src="/images/celebration.jpg" alt="A gold gift box tied with a rich pink ribbon" fill sizes="(max-width: 760px) 100vw, 40vw" /><div><span className="eyebrow">LET THE GOOD MOMENTS GLOW</span><h3>A season of <em>giving.</em></h3><span className="text-link">Explore the festive edit <ArrowRight size={17} /></span></div></Link>
-        </div>
-      </section>
-
-      <section className="finder-banner wrap"><div className="finder-stars"><Sparkles size={50} strokeWidth={.9} /><span>✧</span></div><div><span className="eyebrow">A LITTLE GUIDANCE. A LOT OF HEART.</span><h2>Not sure where to start?</h2><p>Tell us a little about them. We&apos;ll help you find their kind of gift.</p></div><Link href="/gift-finder" className="button button-primary">Find my thoughtful <ArrowUpRight size={18} /></Link></section>
-
-      <section className="brand-note wrap"><span className="brand-flower"><Flower2 size={36} strokeWidth={1} /></span><span className="eyebrow">THE THOUGHT BEHIND RUVAANI</span><h2>It was never really<br />about <em>the gift.</em></h2><p>It&apos;s about being seen. Being celebrated. Being remembered.<br />We&apos;re here for the beautiful things that happen<br />when you let someone know they matter.</p><Link href="/about" className="text-link">A little of our story <ArrowRight size={17} /></Link></section>
-      <div className="delivery-note"><Truck size={18} /><span>Thoughtfully packed. Ready for a happy doorstep.</span><Link href="/policies/shipping">A note on delivery <ArrowRight size={14} /></Link></div>
-    </>
-  );
+        <figure className="premium-hero-figure">
+          <div className="premium-hero-frame"><Image src="/catalogue/single-premium-box.webp" alt="RUVAANI's cream gift box with emerald diary, branded tumbler, indoor plant and ruby ribbon" fill preload sizes="(max-width: 760px) 90vw, 44vw" className="hero-photo" /></div>
+          <figcaption><span>THE ART OF A THOUGHTFUL GESTURE</span><Link href="/products/single-premium-box" aria-label="Discover the Single Premium Box"><ArrowUpRight size={19} /></Link></figcaption>
+        </figure>
+      </div>
+    </section>
+    <section className="gifting-moments wrap" aria-label="Gifting occasions">
+      <Link href="/corporate"><Users size={22} strokeWidth={1.2} /><span>Corporate gifting</span><ArrowUpRight size={15} /></Link>
+      <Link href={quoteHref({ occasion: "Weddings" })}><Heart size={22} strokeWidth={1.2} /><span>Wedding gifting</span><ArrowUpRight size={15} /></Link>
+      <Link href={quoteHref({ occasion: "Diwali" })}><Sparkles size={22} strokeWidth={1.2} /><span>Occasions & hampers</span><ArrowUpRight size={15} /></Link>
+    </section>
+    <section className="section wrap signature-section">
+      <div className="section-heading"><div><span className="eyebrow">THE SIGNATURE COLLECTION</span><h2>A little more <em>extraordinary.</em></h2></div><Link href="/shop?category=Curated%20hampers" className="text-link">Discover our hampers <ArrowRight size={17} /></Link></div>
+      <p className="collection-intro">Three considered collections, each with room for your own signature.</p>
+      <div className="product-grid signature-grid">{products.filter((product) => product.featured).map((product) => <ProductCard key={product.id} product={product} />)}</div>
+    </section>
+    <section className="section wrap categories-section">
+      <div className="section-heading"><div><span className="eyebrow">MAKE IT MEANINGFUL</span><h2>Your gift. <em>Your kind of thoughtful.</em></h2></div><Link href="/shop" className="text-link">The complete edit <ArrowRight size={17} /></Link></div>
+      <div className="category-grid">{collections.map(({ label, category, icon: Icon, color, detail }) => <Link className={`category-card ${color}`} key={category} href={`/shop?category=${encodeURIComponent(category)}`}><div className="category-icon"><Icon size={31} strokeWidth={1.15} /></div><h3>{label}</h3><p>{detail}</p><ArrowUpRight className="category-arrow" size={16} /></Link>)}</div>
+      <p className="catalogue-footnote">A first look at our growing catalogue. More collections will follow.</p>
+    </section>
+    <section className="section wrap">
+      <div className="corporate-feature">
+        <div className="corporate-photo"><Image src="/catalogue/executive-corporate-hamper.webp" alt="RUVAANI executive hamper with branded gifts, golden details and a ruby ribbon" fill sizes="(max-width: 760px) 90vw, 45vw" /></div>
+        <div className="corporate-feature-copy"><span className="eyebrow">YOUR BRAND. THEIR MOMENT.</span><h2>Appreciation,<br /><em>beautifully expressed.</em></h2><p>For the people behind your business. Thoughtful hampers, branded essentials and presentation tailored to your occasion.</p><div className="corporate-benefits"><span><Check />From 10 gifts</span><span><Check />Custom branding</span><span><Check />Curated to your brief</span><span><Check />Presentation options</span></div><Link href="/corporate#enquiry" className="button button-light">Let&apos;s create something meaningful <ArrowUpRight size={18} /></Link><p className="corporate-footnote">Select. Customise. Approve. Produce. Deliver.</p></div>
+      </div>
+    </section>
+    <section className="finder-banner wrap"><div className="finder-stars"><Sparkles size={45} strokeWidth={1} /></div><div><span className="eyebrow">A LITTLE GUIDANCE. A LOT OF HEART.</span><h2>Not sure where to begin?</h2><p>Start with your people and your occasion. We&apos;ll help shape the brief.</p></div><Link href="/gift-finder" className="button button-primary">Find your thoughtful <ArrowUpRight size={18} /></Link></section>
+    <section className="brand-note wrap"><Image src="/brand/monogram.webp" alt="" width={86} height={79} className="brand-note-monogram" /><span className="eyebrow">THE THOUGHT BEHIND RUVAANI</span><h2>More than a gift.<br /><em>A meaningful connection.</em></h2><p>Premium experiences begin with a little thought.<br />A carefully chosen gift, a personal detail, a beautifully tied ribbon.<br />Something that says: you matter.</p><Link href="/about" className="text-link">Discover our story <ArrowRight size={17} /></Link></section>
+  </>;
 }

@@ -1,87 +1,94 @@
-import type { Product } from "./types";
+export const categories = [
+  "Curated hampers",
+  "Divine & festive gifts",
+  "Corporate essentials",
+  "Gourmet & festive delights",
+  "Branding & presentation",
+] as const;
 
-export const categories = ["Hampers", "Desk essentials", "Wellness", "Gourmet", "Eco-friendly"] as const;
-export const occasions = ["Diwali", "Welcome aboard", "Thank you", "Celebrations", "Just because"];
+export const occasions = ["Diwali", "Employee appreciation", "Client gifting", "Corporate events", "Weddings", "Celebrations"];
+export const recipients = ["Employees", "Clients", "Partners", "Friends & family"];
+export const MINIMUM_QUOTE_QUANTITY = 10;
 
-export const demoProducts: Product[] = [
+export interface CatalogueItem {
+  id: string;
+  slug: string;
+  name: string;
+  subtitle: string;
+  description: string;
+  category: typeof categories[number];
+  image: string;
+  imageAlt: string;
+  sheet?: string;
+  cataloguePrice?: number;
+  contents?: string[];
+  personalizable: boolean;
+  featured: boolean;
+  source: string;
+}
+
+const suppliedItems: Omit<CatalogueItem, "image" | "imageAlt">[] = [
   {
-    id: "rv-001", slug: "the-signature-hamper", name: "The Signature Hamper",
-    subtitle: "A little bit of everything wonderful",
-    description: "Good things, thoughtfully brought together. Our signature edit pairs everyday indulgences with beautifully made keepsakes, nestled in a keepsake box that is a gift in itself.",
-    category: "Hampers", price: 249900, compareAtPrice: 289900, stock: 180, minimumOrderQuantity: 1,
-    personalizable: true, artwork: "hamper", color: "#ede5da", badge: "Bestseller",
-    occasions: ["Diwali", "Thank you", "Celebrations"], recipients: ["Clients", "Employees", "Friends & family"],
-    includes: ["Insulated bottle, 500 ml", "Scented soy candle, 100 g", "Almonds, 100 g", "Premium chocolate, 80 g", "Keepsake box & handwritten-style note"],
-    featured: true, active: true,
+    id: "rc-017", slug: "single-premium-box", name: "Single Premium Box",
+    subtitle: "Everyday essentials, exceptionally presented",
+    description: "A considered collection of branded desk essentials, tea and little moments of calm, presented in the cream, emerald and ruby RUVAANI box.",
+    category: "Curated hampers", cataloguePrice: 129900, personalizable: true, featured: true,
+    sheet: "/catalogue/single-premium-box-sheet.webp", source: "Supplied Single Premium Box sheet",
+    contents: ["Premium diary with company name & logo", "Metal pen with company logo", "Seed pencil", "Coffee tumbler with company logo", "Mini indoor plant", "Green tea / Kahwa tea premium sachets", "Premium scented candle jars (2)", "Personalised thank-you card"],
   },
   {
-    id: "rv-002", slug: "the-desk-companion", name: "The Desk Companion",
-    subtitle: "For bright ideas and fresh beginnings",
-    description: "A considered collection for the everyday workspace. A beautifully bound notebook, a dependable pen, and a ceramic mug make room for the next big idea.",
-    category: "Desk essentials", price: 149900, compareAtPrice: 179900, stock: 250, minimumOrderQuantity: 1,
-    personalizable: true, artwork: "desk", color: "#e7ebe2", badge: "Make it personal",
-    occasions: ["Welcome aboard", "Thank you"], recipients: ["Employees", "Partners", "Clients"],
-    includes: ["A5 cloth-bound notebook", "Metal ballpoint pen", "Ceramic mug, 300 ml", "Gift box & message card"],
-    featured: true, active: true,
+    id: "rc-018", slug: "corporate-hamper", name: "Corporate Hamper",
+    subtitle: "A festive thank-you, made for your people",
+    description: "Branded essentials meet roasted nuts, floral diyas and a personal note. A corporate gifting collection designed around appreciation.",
+    category: "Curated hampers", cataloguePrice: 159900, personalizable: true, featured: true,
+    sheet: "/catalogue/corporate-hamper-sheet.webp", source: "Supplied Corporate Hamper sheet",
+    contents: ["Royal jars: 100 g roasted kaju & 100 g roasted badam", "Premium diary with company name & logo", "Metal pen with company logo", "Insulated temperature bottle with company name & logo", "Mini indoor plant", "Scented floral diyas (6)", "Premium scented candle jar (1)", "Personalised thank-you card"],
   },
   {
-    id: "rv-003", slug: "a-moment-of-calm", name: "A Moment of Calm",
-    subtitle: "A thoughtful pause, beautifully wrapped",
-    description: "An invitation to slow down. Soft fragrance, calming tea, and small self-care rituals come together in this gentle expression of appreciation.",
-    category: "Wellness", price: 189900, compareAtPrice: 219900, stock: 95, minimumOrderQuantity: 1,
-    personalizable: true, artwork: "wellness", color: "#efdfdc", badge: "Thoughtfully curated",
-    occasions: ["Thank you", "Just because", "Celebrations"], recipients: ["Friends & family", "Employees", "Partners"],
-    includes: ["Soy wax candle, 150 g", "Chamomile tea, 50 g", "Bath salts, 100 g", "Cotton face towel", "Keepsake box"],
-    featured: true, active: true,
+    id: "rc-019", slug: "executive-corporate-hamper", name: "Executive Corporate Hamper",
+    subtitle: "A generous gesture. A lasting impression.",
+    description: "Our supplied executive collection brings together branded essentials, roasted nuts, a humidifier and fragrant details in a premium presentation.",
+    category: "Curated hampers", cataloguePrice: 219900, personalizable: true, featured: true,
+    sheet: "/catalogue/executive-corporate-hamper-sheet.webp", source: "Supplied Executive Corporate Hamper sheet",
+    contents: ["Royal jars: 100 g roasted kaju & 100 g roasted badam", "Premium diary with company name & logo", "Metal pen with company logo", "Coffee tumbler with company logo", "Coffee mug with company logo", "Humidifier with company logo", "Mini indoor plant", "Scented floral diyas (6)", "Premium scented candle jars (2)", "Personalised thank-you card"],
   },
-  {
-    id: "rv-004", slug: "the-festive-edit", name: "The Festive Edit",
-    subtitle: "All the warmth of the season",
-    description: "Celebrate the people who light up your life. Rich flavors and warm, glowing details turn a festive gesture into something they will remember.",
-    category: "Hampers", price: 329900, compareAtPrice: 379900, stock: 120, minimumOrderQuantity: 1,
-    personalizable: true, artwork: "festive", color: "#eee1cb", badge: "Festive favorite",
-    occasions: ["Diwali", "Celebrations"], recipients: ["Clients", "Partners", "Friends & family"],
-    includes: ["Assorted dry fruits, 250 g", "Premium chocolate selection", "Two brass-finish diyas", "Scented candle", "Festive presentation box"],
-    featured: true, active: true,
-  },
-  {
-    id: "rv-005", slug: "the-conscious-collection", name: "The Conscious Collection",
-    subtitle: "Small gestures. A lighter footprint.",
-    description: "Made for thoughtful everyday rituals, with reusable essentials and simple materials. Practical favorites with a naturally beautiful finish.",
-    category: "Eco-friendly", price: 129900, compareAtPrice: 149900, stock: 300, minimumOrderQuantity: 1,
-    personalizable: true, artwork: "eco", color: "#e1e6d9",
-    occasions: ["Welcome aboard", "Thank you", "Just because"], recipients: ["Employees", "Partners", "Friends & family"],
-    includes: ["Bamboo-finish reusable cup", "Recycled-paper notebook", "Wooden pencil set", "Cotton drawstring pouch"],
-    featured: false, active: true,
-  },
-  {
-    id: "rv-006", slug: "coffee-and-conversations", name: "Coffee & Conversations",
-    subtitle: "The start of something good",
-    description: "The best conversations start over a good cup. A comforting coffee selection, a favorite mug, and a sweet little something for the side.",
-    category: "Gourmet", price: 169900, compareAtPrice: 199900, stock: 85, minimumOrderQuantity: 1,
-    personalizable: false, artwork: "gourmet", color: "#e9dfd3",
-    occasions: ["Thank you", "Just because"], recipients: ["Clients", "Friends & family", "Partners"],
-    includes: ["Ground coffee, 150 g", "Ceramic mug, 300 ml", "Butter cookies, 100 g", "Chocolate bar, 60 g", "Gift box"],
-    featured: false, active: true,
-  },
-  {
-    id: "rv-007", slug: "a-warm-welcome", name: "A Warm Welcome",
-    subtitle: "First impressions, thoughtfully made",
-    description: "Make the first day feel like belonging. A ready-to-gift collection of desk essentials for a fresh chapter, with space for a personal welcome.",
-    category: "Desk essentials", price: 219900, compareAtPrice: 249900, stock: 200, minimumOrderQuantity: 1,
-    personalizable: true, artwork: "desk", color: "#e4ddd8", badge: "For your team",
-    occasions: ["Welcome aboard"], recipients: ["Employees"],
-    includes: ["Hardcover notebook", "Insulated bottle, 500 ml", "Metal pen", "Welcome message card", "Presentation box"],
-    featured: false, active: true,
-  },
-  {
-    id: "rv-008", slug: "sweet-little-things", name: "Sweet Little Things",
-    subtitle: "Because a little joy goes a long way",
-    description: "A pocket of sweetness for any occasion. Thoughtfully chosen treats make this an easy way to say thank you, well done, or simply thinking of you.",
-    category: "Gourmet", price: 89900, compareAtPrice: 109900, stock: 400, minimumOrderQuantity: 1,
-    personalizable: false, artwork: "gourmet", color: "#eeddd7", badge: "Under ₹1,000",
-    occasions: ["Diwali", "Thank you", "Celebrations", "Just because"], recipients: ["Employees", "Friends & family", "Clients"],
-    includes: ["Chocolate assortment, 100 g", "Roasted almonds, 75 g", "Butter cookies, 75 g", "Mini gift box"],
-    featured: false, active: true,
-  },
+  { id: "rc-001", slug: "royal-ganesh-divine-gift-box", name: "Royal Ganesh Divine Gift Box", subtitle: "A thoughtful festive blessing", description: "A divine gift-box option from the RUVAANI festive catalogue. Confirm the final selection, finish and presentation with our team.", category: "Divine & festive gifts", personalizable: false, featured: false, source: "RUVAANI Creation, page 5, item 1" },
+  { id: "rc-002", slug: "divine-trio-gold-frame", name: "Divine Trio Gold Frame", subtitle: "A keepsake for meaningful occasions", description: "A gold-tone devotional frame from the supplied collection. Dimensions, finish and packaging are confirmed in your quotation.", category: "Divine & festive gifts", personalizable: false, featured: false, source: "RUVAANI Creation, page 5, item 2" },
+  { id: "rc-003", slug: "floral-candles", name: "Floral Candles", subtitle: "A little light for their celebrations", description: "Floral candle designs for a festive hamper or gifting selection. Colours, fragrance and quantity are agreed with your brief.", category: "Divine & festive gifts", personalizable: false, featured: false, source: "RUVAANI Creation, page 5, item 3" },
+  { id: "rc-004", slug: "candle-jars", name: "Candle Jars", subtitle: "Warmth, beautifully contained", description: "Decorative candle jars to include in your curated gift. Jar style, fragrance and size are subject to your confirmed selection.", category: "Divine & festive gifts", personalizable: false, featured: false, source: "RUVAANI Creation, page 5, item 4" },
+  { id: "rc-005", slug: "decorative-mementos", name: "Decorative Mementos", subtitle: "Something to keep. A moment to remember.", description: "Decorative keepsakes from the festive collection. Ask our team about the available designs, finishes and presentation options.", category: "Divine & festive gifts", personalizable: false, featured: false, source: "RUVAANI Creation, page 5, item 5" },
+  { id: "rc-006", slug: "customised-insulated-temperature-water-bottle", name: "Customised Insulated Temperature Water Bottle", subtitle: "An everyday essential with your identity", description: "A branded bottle option for corporate gifts and hampers. Capacity, colours, temperature-display specifications and branding are confirmed in the quote.", category: "Corporate essentials", personalizable: true, featured: false, source: "RUVAANI Creation, page 5, item 6" },
+  { id: "rc-007", slug: "customised-diary", name: "Customised Diary", subtitle: "For their next bright idea", description: "A diary with company branding for a considered corporate gift. Cover, page format and personalisation details are confirmed with your selection.", category: "Corporate essentials", personalizable: true, featured: false, source: "RUVAANI Creation, page 5, item 7" },
+  { id: "rc-008", slug: "customised-pen", name: "Customised Pen", subtitle: "Your brand, in the little details", description: "A personalised pen option for branded stationery sets and hampers. Finish, printing and presentation are quoted to your brief.", category: "Corporate essentials", personalizable: true, featured: false, source: "RUVAANI Creation, page 5, item 8" },
+  { id: "rc-009", slug: "customised-key-chain", name: "Customised Key Chain", subtitle: "A small gesture they can carry", description: "A key-chain option with company branding. Material, colour and personalisation are confirmed before production.", category: "Corporate essentials", personalizable: true, featured: false, source: "RUVAANI Creation, page 5, item 9" },
+  { id: "rc-010", slug: "customised-thank-you-card", name: "Customised Thank You Card", subtitle: "The words that make it theirs", description: "A personalised thank-you card to complete your gift. Share your message and branding for the design approval stage.", category: "Corporate essentials", personalizable: true, featured: false, source: "RUVAANI Creation, page 5, item 10" },
+  { id: "rc-011", slug: "gourmet-hampers", name: "Gourmet Hampers", subtitle: "Good taste, thoughtfully brought together", description: "A gourmet hamper selection tailored to your brief. Choose the assortment with our team; contents and quantities are confirmed in writing.", category: "Gourmet & festive delights", personalizable: true, featured: false, source: "RUVAANI Creation, page 5, item 11" },
+  { id: "rc-012", slug: "roasted-cashews", name: "Roasted Cashews", subtitle: "A classic festive indulgence", description: "Roasted cashews for your gifting assortment. Pack weight, ingredients, allergen information and packaging are confirmed before ordering.", category: "Gourmet & festive delights", personalizable: false, featured: false, source: "RUVAANI Creation, page 5, item 12" },
+  { id: "rc-013", slug: "roasted-almonds", name: "Roasted Almonds", subtitle: "A little something to savour", description: "Roasted almonds for festive gifts and hampers. Pack weight, ingredients, allergen information and presentation are confirmed in the quote.", category: "Gourmet & festive delights", personalizable: false, featured: false, source: "RUVAANI Creation, page 5, item 13" },
+  { id: "rc-014", slug: "cavity-boxes-for-sweets-and-chocolates", name: "Cavity Boxes for Sweets / Chocolates", subtitle: "Every sweet detail, in its place", description: "Compartmented presentation boxes for sweets or chocolates. Box format and any included food assortment must be confirmed separately.", category: "Gourmet & festive delights", personalizable: true, featured: false, source: "RUVAANI Creation, page 5, item 14" },
+  { id: "rc-015", slug: "ribbon-branding", name: "Ribbon Branding", subtitle: "A signature finishing touch", description: "Branded ribbon as a presentation option for your hamper. Ribbon colour, printing and artwork are agreed during customisation.", category: "Branding & presentation", personalizable: true, featured: false, source: "RUVAANI Creation, page 5, item 15" },
+  { id: "rc-016", slug: "custom-inserts", name: "Custom Inserts", subtitle: "A message made just for them", description: "Custom printed inserts for your gifting presentation. Share your artwork, message and required format when requesting a quote.", category: "Branding & presentation", personalizable: true, featured: false, source: "RUVAANI Creation, page 5, item 16" },
 ];
+
+export const catalogueProducts: CatalogueItem[] = suppliedItems.map((item) => ({
+  ...item,
+  image: `/catalogue/${item.slug}.webp`,
+  imageAlt: `${item.name} shown in the supplied RUVAANI catalogue`,
+}));
+
+export function filterCatalogue(products: CatalogueItem[], filters: { query?: string; category?: string; personalizable?: boolean; sort?: string }) {
+  const query = filters.query?.trim().toLowerCase() ?? "";
+  const result = products.filter((item) =>
+    (!query || `${item.name} ${item.subtitle} ${item.description} ${item.category} ${item.contents?.join(" ") ?? ""}`.toLowerCase().includes(query)) &&
+    (!filters.category || filters.category === "All gifts" || item.category === filters.category) &&
+    (!filters.personalizable || item.personalizable)
+  );
+  if (filters.sort === "name") result.sort((a, b) => a.name.localeCompare(b.name));
+  return result;
+}
+
+export function quoteHref(options: { product?: string; quantity?: number; budget?: number; occasion?: string; recipient?: string } = {}) {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(options)) if (value !== undefined && value !== "") params.set(key, String(value));
+  return `/corporate${params.size ? `?${params}` : ""}#enquiry`;
+}

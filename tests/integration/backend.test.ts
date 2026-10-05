@@ -6,7 +6,7 @@ import { resolve } from "node:path";
 import { MongoMemoryReplSet } from "mongodb-memory-server";
 import { connectDb } from "../../src/lib/db";
 import { ProductModel, UserModel, SessionModel, OrderModel, QuoteModel, RateModel, AuditModel } from "../../src/lib/models";
-import { demoProducts } from "../../src/lib/catalog-data";
+import { demoProducts } from "../fixtures/products";
 
 const base = "http://127.0.0.1:3101";
 let replica: MongoMemoryReplSet;
@@ -35,6 +35,7 @@ before(async () => {
     cwd: process.cwd(),
     env: {
       ...process.env, DEMO_MODE: "false", NEXT_PUBLIC_SITE_URL: base,
+      RUVAANI_INTEGRATION_TEST: "1",
       NEXT_TELEMETRY_DISABLED: "1",
       RAZORPAY_KEY_ID: "rzp_test_fixture", RAZORPAY_KEY_SECRET: "test-only-key",
       RAZORPAY_WEBHOOK_SECRET: "test-only-webhook",
@@ -85,39 +86,47 @@ test("registration stores only hashed credentials and issues a protected session
 test("bad passwords, role injection, anonymous access and unauthorized admin changes fail", async () => {
   assert.equal((await request("/api/auth/login", { email: customer.email, password: "incorrect-password" }, "")).status, 401);
   assert.equal((await request("/api/auth/register", { ...customer, email: "inject@example.com", role: "ADMIN" }, "")).status, 400);
-  assert.equal((await request("/api/checkout", {}, "")).status, 401);
+  assert.equal((await request("/api/checkout", {}, "")).status, 410);
   assert.equal((await request("/api/admin", { kind: "product", id: "rv-001", stock: 9999, active: true }, cookie, "PATCH")).status, 403);
 });
 
 test("corporate enquiry is persisted with consent and rejected if invalid", async () => {
-  const body = { name: "Test Buyer", company: "Sample Company", email: "buyer@example.com", phone: "9876543210", occasion: "Diwali", quantity: 50, budget: 1500, deliveryDate: "2099-10-01", locations: "Bengaluru", personalization: true, requirements: "Test enquiry", consent: true };
+  const body = { name: "Test Buyer", company: "Sample Company", email: "buyer@example.com", phone: "9876543210", occasion: "Diwali", quantity: 10, budget: 299, productId: "rc-017", deliveryDate: "2099-10-01", locations: "Bengaluru", personalization: true, requirements: "Test enquiry", consent: true };
   const response = await request("/api/quotes", body, "");
   assert.equal(response.status, 201, await response.clone().text());
   const quote = await QuoteModel.findOne({ reference: (await response.json()).reference });
   assert.equal(quote?.company, body.company);
   assert.ok(quote?.consentAt);
+  assert.equal(quote?.productId, "rc-017");
+  assert.equal(quote?.productName, "Single Premium Box");
+  assert.equal(quote?.budget, 299);
   assert.equal((await request("/api/quotes", { ...body, consent: false }, "")).status, 400);
+  assert.equal((await request("/api/quotes", { ...body, quantity: 9 }, "")).status, 400);
+  assert.equal((await request("/api/quotes", { ...body, productId: "rc-999" }, "")).status, 400);
+  assert.equal((await request("/api/quotes", { ...body, productName: "Injected name" }, "")).status, 400);
+  assert.equal(await QuoteModel.countDocuments(), 1);
 });
 
-test("checkout prices server-side, reserves atomically and replays an idempotency key", async () => {
-  const body = { address, items: [{ productId: "rv-001", quantity: 2, name: "A", message: "Thank you" }], idempotencyKey: randomUUID() };
-  const first = await request("/api/checkout", body);
-  assert.equal(first.status, 200, await first.clone().text());
-  const created = await first.json();
-  assert.equal(created.amount, (249900 + 9900) * 2);
-  assert.equal((await ProductModel.findOne({ id: "rv-001" }))?.stock, 178);
-  const replay = await request("/api/checkout", body);
-  assert.equal(replay.status, 200);
-  assert.equal((await replay.json()).orderId, created.orderId);
-  assert.equal((await ProductModel.findOne({ id: "rv-001" }))?.stock, 178);
-  assert.equal(await OrderModel.countDocuments({ idempotencyKey: body.idempotencyKey }), 1);
-  assert.equal((await request("/api/checkout", { ...body, items: [{ ...body.items[0], quantity: 3 }] })).status, 409);
-  assert.equal((await request("/api/checkout", { ...body, idempotencyKey: randomUUID(), items: [{ ...body.items[0], price: 1 }] })).status, 400);
+test("quote-only checkout rejects legacy and new catalogue items without reserving stock", async () => {
+  for (const productId of ["rv-001", "rc-017", "rc-001"]) {
+    const response = await request("/api/checkout", { address, items: [{ productId, quantity: 10 }], idempotencyKey: randomUUID() });
+    assert.equal(response.status, 410);
+    assert.match((await response.json()).error, /quote-only/);
+  }
+  assert.equal((await ProductModel.findOne({ id: "rv-001" }))?.stock, 180);
+  assert.equal(await OrderModel.countDocuments(), 0);
+  const response = await fetch(`${base}/api/checkout`, { method: "POST", headers: { Origin: "https://untrusted.example" } });
+  assert.equal(response.status, 403);
 });
 
 test("captured payment and duplicate webhooks confirm only the existing order", async () => {
-  const order = await OrderModel.findOne({ paymentStatus: "PAYMENT_PENDING" });
-  assert.ok(order);
+  const user = await UserModel.findOne({ email: customer.email });
+  const order = await OrderModel.create({
+    number: "RV-LEGACY-1", userId: user!._id.toString(), idempotencyKey: randomUUID(), requestHash: "historical-fixture",
+    razorpayOrderId: "order_1111111111111111", address, subtotal: 519600, shipping: 0, total: 519600,
+    items: [{ productId: "rv-001", name: "Historical gift", quantity: 2, unitPrice: 259800, personalization: { name: "A", message: "Thank you" } }],
+  });
+  await ProductModel.updateOne({ id: "rv-001" }, { $set: { stock: 178 } });
   const paymentId = `pay_${order.razorpayOrderId.slice(6)}`;
   const signature = createHmac("sha256", "test-only-key").update(`${order.razorpayOrderId}|${paymentId}`).digest("hex");
   assert.equal((await request("/api/payments/verify", { razorpay_order_id: order.razorpayOrderId, razorpay_payment_id: paymentId, razorpay_signature: "0".repeat(64) })).status, 400);
@@ -136,18 +145,31 @@ test("captured payment and duplicate webhooks confirm only the existing order", 
   assert.equal(await OrderModel.countDocuments(), 1);
 });
 
-test("concurrent checkouts cannot reserve the same last unit twice", async () => {
-  await ProductModel.updateOne({ id: "rv-008" }, { $set: { stock: 1 } });
-  const payload = { address, items: [{ productId: "rv-008", quantity: 1, name: "", message: "" }] };
-  const responses = await Promise.all([request("/api/checkout", { ...payload, idempotencyKey: randomUUID() }), request("/api/checkout", { ...payload, idempotencyKey: randomUUID() })]);
-  assert.equal(responses.filter((r) => r.status === 200).length, 1, await Promise.all(responses.map((r) => r.clone().text())).then((v) => v.join(";")));
-  assert.ok(responses.some((r) => r.status === 400 || r.status === 409));
-  assert.equal((await ProductModel.findOne({ id: "rv-008" }))?.stock, 0);
+test("public catalogue stays quote-only with a database containing legacy products", async () => {
+  const response = await fetch(`${base}/products/single-premium-box`);
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /Single Premium Box/);
+  assert.doesNotMatch(html, /Add to my bag/);
+  const structuredData = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map((match) => JSON.parse(match[1]));
+  assert.ok(structuredData.some((data) => data["@type"] === "Product"));
+  assert.ok(structuredData.every((data) => !data.offers));
+  const removed = await fetch(`${base}/products/the-signature-hamper`);
+  const removedHtml = await removed.text();
+  // Next.js may have started streaming before notFound() resolves the catalogue.
+  assert.ok(removed.status === 200 || removed.status === 404);
+  assert.match(removedHtml, /A gift of a fresh/);
+  assert.match(removedHtml, /<meta name="robots" content="noindex"/);
+  assert.doesNotMatch(removedHtml, /<script type="application\/ld\+json">/);
 });
 
 test("resuming an unpaid order neither creates a new order nor reserves more stock", async () => {
-  const order = await OrderModel.findOne({ paymentStatus: "PAYMENT_PENDING" });
-  assert.ok(order);
+  const user = await UserModel.findOne({ email: customer.email });
+  const order = await OrderModel.create({
+    number: "RV-LEGACY-2", userId: user!._id.toString(), idempotencyKey: randomUUID(), requestHash: "historical-fixture",
+    razorpayOrderId: "order_2222222222222222", address, subtotal: 89900, shipping: 9900, total: 99800,
+    items: [{ productId: "rv-008", name: "Historical gift", quantity: 1, unitPrice: 89900, personalization: { name: "", message: "" } }],
+  });
   const previous = await OrderModel.countDocuments();
   const stock = (await ProductModel.findOne({ id: "rv-008" }))?.stock;
   const response = await request(`/api/orders/${order._id}/payment`, {});

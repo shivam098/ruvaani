@@ -66,6 +66,7 @@ const quoteSchema = new Schema({
   name: String, company: String, email: String, phone: String,
   occasion: String, quantity: Number, budget: Number, deliveryDate: String,
   locations: String, personalization: Boolean, requirements: String,
+  productId: String, productName: String,
   consentAt: { type: Date, required: true },
   status: { type: String, enum: ["SUBMITTED", "UNDER_REVIEW", "CONTACTED", "CLOSED"], default: "SUBMITTED", required: true },
 }, { timestamps: true });
