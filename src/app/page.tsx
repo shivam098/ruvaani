@@ -19,7 +19,6 @@ export default async function Home() {
     <section className="premium-hero">
       <div className="wrap premium-hero-grid">
         <div className="premium-hero-copy">
-          <span className="premium-eyebrow">RUVAANI · CREATIONS & PACKAGING</span>
           <h1>Gifts that create<br /><em>lasting moments.</em></h1>
           <p>Considered gifts. Beautiful details.<br />For your people, your celebrations, and everything worth remembering.</p>
           <div className="premium-hero-actions"><Link href="/shop" className="button button-primary">Explore the collection <ArrowUpRight size={18} /></Link><Link href="/corporate#enquiry" className="text-link">Create a bespoke gift <ArrowRight size={17} /></Link></div>
@@ -35,6 +34,19 @@ export default async function Home() {
       <Link href="/corporate"><Users size={22} strokeWidth={1.2} /><span>Corporate gifting</span><ArrowUpRight size={15} /></Link>
       <Link href={quoteHref({ occasion: "Weddings" })}><Heart size={22} strokeWidth={1.2} /><span>Wedding gifting</span><ArrowUpRight size={15} /></Link>
       <Link href={quoteHref({ occasion: "Diwali" })}><Sparkles size={22} strokeWidth={1.2} /><span>Occasions & hampers</span><ArrowUpRight size={15} /></Link>
+    </section>
+    <section id="diwali" className="festival-highlight wrap" aria-labelledby="diwali-heading">
+      <div className="festival-copy">
+        <span className="festival-label"><Sparkles size={17} aria-hidden="true" />THE DIWALI EDIT</span>
+        <h2 id="diwali-heading">Light up their <em>Diwali.</em></h2>
+        <p>Thoughtful hampers, festive keepsakes and personal details for the people who make your year brighter.</p>
+        <div className="festival-actions">
+          <Link href="/shop?category=Divine%20%26%20festive%20gifts" className="button button-light">Explore festive gifts <ArrowUpRight size={17} /></Link>
+          <Link href={quoteHref({ occasion: "Diwali" })} className="text-link">Plan your Diwali gifting <ArrowRight size={17} /></Link>
+        </div>
+        <span className="festival-note">From 10 gifts. Made personal, together.</span>
+      </div>
+      <div className="festival-image"><Image src="/catalogue/festive-collection.webp" alt="Festive hampers, a glowing diya and gold-ribbon gift boxes from the RUVAANI catalogue" fill sizes="(max-width: 760px) 100vw, 45vw" /></div>
     </section>
     <section className="section wrap signature-section">
       <div className="section-heading"><div><span className="eyebrow">THE SIGNATURE COLLECTION</span><h2>A little more <em>extraordinary.</em></h2></div><Link href="/shop?category=Curated%20hampers" className="text-link">Discover our hampers <ArrowRight size={17} /></Link></div>

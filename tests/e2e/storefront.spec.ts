@@ -5,6 +5,8 @@ test("premium hero uses supplied branding and remains responsive", async ({ page
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Gifts that create");
+  await expect(page.locator(".premium-hero .premium-eyebrow")).toHaveCount(0);
+  await expect(page.locator(".premium-hero")).not.toContainText("RUVAANI · CREATIONS & PACKAGING");
   await expect(page.locator(".site-header .brand-monogram")).toBeVisible();
   await expect(page.locator(".site-header .brand-wordmark")).toBeVisible();
   for (const area of [".site-header", ".site-footer"]) {
@@ -41,20 +43,88 @@ test("premium hero uses supplied branding and remains responsive", async ({ page
   expect(errors).toEqual([]);
 });
 
-test("corrected logo stays clear of the menu and actions on narrow phones", async ({ page }) => {
-  await page.setViewportSize({ width: 320, height: 800 });
+test("mobile header keeps balanced gaps and aligned controls across breakpoints", async ({ page }, info) => {
   await page.goto("/");
   const header = page.locator(".site-header");
-  await expect(header.locator(".brand-tagline")).toBeVisible();
-  const menu = await header.getByRole("button", { name: "Open menu" }).boundingBox();
-  const logo = await header.locator(".brand-logo").boundingBox();
-  const actions = await header.locator(".header-actions").boundingBox();
-  expect(menu).not.toBeNull();
-  expect(logo).not.toBeNull();
-  expect(actions).not.toBeNull();
-  expect(menu!.x + menu!.width).toBeLessThanOrEqual(logo!.x);
-  expect(logo!.x + logo!.width).toBeLessThanOrEqual(actions!.x);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  for (const width of [320, 360, 390, 430, 600, 768, 960]) {
+    await page.setViewportSize({ width, height: 800 });
+    await expect(header.locator(".brand-tagline")).toBeVisible();
+    const menu = await header.getByRole("button", { name: "Open menu" }).boundingBox();
+    const logo = await header.locator(".brand-logo").boundingBox();
+    const actions = await header.locator(".header-actions").boundingBox();
+    expect(menu).not.toBeNull();
+    expect(logo).not.toBeNull();
+    expect(actions).not.toBeNull();
+    const leftGap = logo!.x - (menu!.x + menu!.width);
+    const rightGap = actions!.x - (logo!.x + logo!.width);
+    expect(leftGap, `left clearance at ${width}px`).toBeGreaterThanOrEqual(8);
+    expect(rightGap, `right clearance at ${width}px`).toBeGreaterThanOrEqual(8);
+    expect(Math.abs(leftGap - rightGap), `balanced logo spacing at ${width}px`).toBeLessThanOrEqual(1);
+    expect(Math.abs(menu!.y + menu!.height / 2 - logo!.y - logo!.height / 2), `menu alignment at ${width}px`).toBeLessThanOrEqual(1);
+    expect(Math.abs(actions!.y + actions!.height / 2 - logo!.y - logo!.height / 2), `action alignment at ${width}px`).toBeLessThanOrEqual(1);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `overflow at ${width}px`).toBe(true);
+    await header.getByRole("button", { name: "Open menu" }).click();
+    const expandedLogo = await header.locator(".brand-logo").boundingBox();
+    expect(expandedLogo?.y).toBe(logo!.y);
+    await header.getByRole("button", { name: "Close menu" }).click();
+    if (width === 390) {
+      await page.mouse.move(0, 160);
+      await header.screenshot({ path: `test-results/aligned-header-${info.project.name}.png`, scale: "css" });
+    }
+  }
+});
+
+test("Diwali highlight links to festive gifts and a Diwali-prefilled enquiry", async ({ page }, info) => {
+  await page.goto("/shop");
+  await page.locator(".announcement").getByRole("link", { name: "The Diwali edit is here" }).click();
+  await expect(page).toHaveURL(/\/#diwali$/);
+  const festival = page.getByRole("region", { name: "Light up their Diwali." });
+  await expect(festival).toBeInViewport();
+  await expect(festival.getByRole("img")).toBeVisible();
+  await festival.locator("img").evaluate((image) => {
+    if (!(image instanceof HTMLImageElement)) throw new Error("Expected a catalogue photograph.");
+    return image.decode();
+  });
+  const banner = await festival.boundingBox();
+  expect(banner).not.toBeNull();
+  expect(banner!.height, "festival feature should not become an oversized poster").toBeLessThanOrEqual(info.project.name === "mobile" ? 600 : 460);
+  await festival.screenshot({ path: `test-results/diwali-${info.project.name}.png`, scale: "css" });
+  await festival.getByRole("link", { name: "Explore festive gifts" }).click();
+  if (info.project.name === "mobile") await page.getByRole("button", { name: "Filters", exact: true }).click();
+  await expect(page.getByRole("radio", { name: "Divine & festive gifts" })).toBeChecked();
+  await expect(page.locator(".product-card")).toHaveCount(5);
+  await page.locator(".announcement").getByRole("link", { name: "The Diwali edit is here" }).click();
+  await festival.getByRole("link", { name: "Plan your Diwali gifting" }).click();
+  await expect(page).toHaveURL(/\/corporate\?occasion=Diwali#enquiry/);
+  await expect(page.getByRole("combobox", { name: "The occasion", exact: true })).toHaveValue("Diwali");
+});
+
+test("Diwali marquee can be paused and respects reduced motion", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("/");
+  await page.mouse.move(0, 160);
+  const announcement = page.locator(".announcement");
+  const track = announcement.locator(".announcement-track");
+  await expect(announcement.getByRole("link")).toHaveCount(1);
+  await expect(track).toHaveCSS("animation-name", "festival-marquee");
+  await expect(track).toHaveCSS("animation-play-state", "running");
+  const start = await track.evaluate((element) => getComputedStyle(element).transform);
+  await expect.poll(() => track.evaluate((element) => getComputedStyle(element).transform)).not.toBe(start);
+  await announcement.getByRole("button", { name: "Pause announcement" }).click();
+  await page.locator(".site-header .brand-logo").focus();
+  await expect(track).toHaveCSS("animation-play-state", "paused");
+  await announcement.getByRole("button", { name: "Resume announcement" }).click();
+  await expect(track).toHaveCSS("animation-play-state", "running");
+  await page.keyboard.press("Shift+Tab");
+  await expect(announcement.getByRole("link")).toBeFocused();
+  await expect(track).toHaveCSS("animation-play-state", "paused");
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await expect(track).not.toBeVisible();
+  await expect(track).toHaveCSS("animation-name", "none");
+  await expect(announcement.locator(".announcement-static")).toBeVisible();
+  await expect(announcement.getByRole("button")).toHaveCount(0);
+  await announcement.getByRole("link").click();
+  await expect(page).toHaveURL(/\/#diwali$/);
 });
 
 test("catalogue filters, search, pagination and quick view use supplied entries", async ({ page }, info) => {

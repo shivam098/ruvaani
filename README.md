@@ -78,6 +78,15 @@ GitHub account when setting up another machine.
 
 No database, Razorpay account or API key is needed to browse the catalogue.
 
+The homepage's Diwali highlight uses supplied catalogue photography and original
+RUVAANI styling. The announcement links to this section from every page; its
+slow marquee has a persistent pause control, pauses for hover/keyboard reading,
+and becomes a static link when reduced motion is preferred. The feature's
+actions open festive catalogue items or prefill a Diwali enquiry. This is a
+manually maintained seasonal edit, not an automatic festival calendar or a
+promise of delivery before a holiday. Update the homepage and header together
+when changing the featured occasion.
+
 | Journey | Current behavior |
 |---|---|
 | Homepage and collection | 19 sourced catalogue entries, search, categories, alphabetical sort and pagination |
