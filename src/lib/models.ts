@@ -106,6 +106,7 @@ const homepageSchema = new Schema({
     marquee: {
       enabled: { type: Boolean, required: true },
       message: { type: String, required: true },
+      additionalMessages: { type: [String], default: undefined },
       href: { type: String, required: true },
     },
   },

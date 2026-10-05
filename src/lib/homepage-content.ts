@@ -6,6 +6,8 @@ export const eventImages = [
   ...catalogueProducts.map((product) => ({ src: product.image, label: product.name, alt: product.imageAlt })),
 ];
 
+export const defaultMarqueeMessages = ["Personalised gifting, made meaningful", "Corporate gifting from 10 gifts"];
+
 const text = (label: string, maximum: number) => z.string().trim().min(1, `${label} is required.`).max(maximum, `${label} must be ${maximum} characters or fewer.`);
 const siteLink = text("Link", 300).refine((value) => {
   // Keep destinations on this site, including after URL decoding/normalisation.
@@ -37,6 +39,7 @@ export const homepageContentSchema = z.object({
   marquee: z.object({
     enabled: z.boolean(),
     message: text("Marquee message", 140),
+    additionalMessages: z.array(text("Additional marquee message", 140)).max(4, "Use at most five marquee messages.").default(() => [...defaultMarqueeMessages]),
     href: siteLink,
   }).strict(),
 }).strict().superRefine((content, context) => {
@@ -73,5 +76,5 @@ export const defaultHomepageContent: HomepageContent = {
     secondaryHref: quoteHref({ occasion: "Diwali" }),
     note: "From 10 gifts. Made personal, together.",
   },
-  marquee: { enabled: true, message: "The Diwali edit is here", href: "/#featured-event" },
+  marquee: { enabled: true, message: "The Diwali edit is here", additionalMessages: [...defaultMarqueeMessages], href: "/#featured-event" },
 };

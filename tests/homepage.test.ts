@@ -2,13 +2,24 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { defaultHomepageContent, eventImages, homepageContentSchema, homepageUpdateSchema } from "../src/lib/homepage-content";
+import { defaultHomepageContent, defaultMarqueeMessages, eventImages, homepageContentSchema, homepageUpdateSchema } from "../src/lib/homepage-content";
 
 test("default event and marquee are valid and all selectable photographs exist", () => {
   assert.deepEqual(homepageContentSchema.parse(defaultHomepageContent), defaultHomepageContent);
   assert.equal(new Set(eventImages.map((image) => image.src)).size, eventImages.length);
   for (const image of eventImages) assert.ok(existsSync(join(process.cwd(), "public", image.src)), image.src);
   assert.equal(homepageUpdateSchema.safeParse({ revision: 0, content: defaultHomepageContent }).success, true);
+});
+
+test("legacy single-message settings retain their content and gain the new default messages", () => {
+  const legacy = { enabled: true, message: "Owner's saved announcement", href: "/shop" };
+  const parsed = homepageContentSchema.parse({ ...defaultHomepageContent, marquee: legacy });
+  assert.deepEqual(parsed.marquee, { ...legacy, additionalMessages: defaultMarqueeMessages });
+  assert.equal(new Set([defaultHomepageContent.marquee.message, ...defaultMarqueeMessages]).size, 3);
+  assert.deepEqual(homepageContentSchema.parse({ ...defaultHomepageContent, marquee: { ...legacy, additionalMessages: [] } }).marquee.additionalMessages, []);
+  for (const additionalMessages of [[""], [" "], ["x".repeat(141)], Array(5).fill("Too many"), "not an array", null]) {
+    assert.equal(homepageContentSchema.safeParse({ ...defaultHomepageContent, marquee: { ...legacy, additionalMessages } }).success, false);
+  }
 });
 
 test("homepage links reject off-site, script and URL-normalisation bypasses", () => {

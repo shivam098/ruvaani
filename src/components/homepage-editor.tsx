@@ -80,7 +80,12 @@ export function HomepageEditor({ initial, demo }: { initial: HomepageSettings; d
         <label>Marquee message<input required maxLength={140} value={content.marquee.message} onChange={(e) => marqueeField("message", e.target.value)} /></label>
         <label>Marquee link<input required maxLength={300} value={content.marquee.href} onChange={(e) => marqueeField("href", e.target.value)} /></label>
       </div>
-      <p className="helper-text">Use /#featured-event to link to the visible event. If you hide the event, use another destination such as /shop, or hide the marquee too. Motion pauses for reading and is replaced with static text when reduced motion is requested.</p>
+      {content.marquee.additionalMessages.map((message, index) => <div className="marquee-message-row" key={index}>
+        <label>Additional message {index + 1}<input required maxLength={140} value={message} onChange={(e) => marqueeField("additionalMessages", content.marquee.additionalMessages.map((item, itemIndex) => itemIndex === index ? e.target.value : item))} /></label>
+        <button type="button" className="text-button" aria-label={`Remove additional message ${index + 1}`} onClick={() => marqueeField("additionalMessages", content.marquee.additionalMessages.filter((_, itemIndex) => itemIndex !== index))}>Remove</button>
+      </div>)}
+      <button type="button" className="button button-outline" disabled={content.marquee.additionalMessages.length >= 4} onClick={() => marqueeField("additionalMessages", [...content.marquee.additionalMessages, ""])}>Add another message</button>
+      <p className="helper-text">Use up to five messages; they share the same destination. Use /#featured-event to link to the visible event. If you hide the event, use another destination such as /shop, or hide the marquee too. Visitors can pause or play scrolling; reduced-motion visitors see static messages until they choose Play.</p>
     </fieldset>
     {error && <p role="alert" className="form-error">{error}</p>}
     {notice && <p role="status" className="notice">{notice}</p>}

@@ -66,6 +66,29 @@ test("marquee is at the very top, followed by navigation, event and slogans", as
   await page.screenshot({ path: `test-results/event-first-${info.project.name}.png`, scale: "css" });
 });
 
+test("blush palette and full-width event use the desktop side space without mobile overflow", async ({ page }, info) => {
+  await page.goto("/");
+  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(255, 243, 245)");
+  await expect(page.locator(".announcement")).toHaveCSS("background-color", "rgb(249, 232, 207)");
+  await expect(page.locator("#event-heading")).toHaveCSS("color", "rgb(3, 57, 45)");
+  await expect(page.locator("#event-heading em")).toHaveCSS("color", "rgb(165, 21, 62)");
+  for (const width of [320, 390, 1440, 1920]) {
+    await page.setViewportSize({ width, height: 1000 });
+    const event = await page.locator("#featured-event").boundingBox();
+    const inner = await page.locator(".festival-inner").boundingBox();
+    expect(event).not.toBeNull();
+    expect(inner).not.toBeNull();
+    expect(event!.x).toBe(0);
+    expect(event!.width).toBe(width);
+    if (width >= 1440) expect(inner!.width / width).toBeGreaterThanOrEqual(.85);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  }
+  await page.screenshot({ path: `test-results/event-wide-${info.project.name}.png`, scale: "css" });
+  await page.goto("/contact");
+  await expect(page.locator(".contact-grid article").first()).toHaveCSS("background-color", "rgb(251, 229, 235)");
+  await page.screenshot({ path: `test-results/contact-blush-${info.project.name}.png`, scale: "css" });
+});
+
 test("mobile header keeps balanced gaps and aligned controls across breakpoints", async ({ page }, info) => {
   await page.goto("/");
   const header = page.locator(".site-header");
@@ -110,7 +133,7 @@ test("Diwali highlight links to festive gifts and a Diwali-prefilled enquiry", a
   });
   const banner = await festival.boundingBox();
   expect(banner).not.toBeNull();
-  expect(banner!.height, "festival feature should not become an oversized poster").toBeLessThanOrEqual(info.project.name === "mobile" ? 600 : 460);
+  expect(banner!.height, "full-width festival feature should remain a restrained hero, not a full-screen poster").toBeLessThanOrEqual(info.project.name === "mobile" ? 600 : 520);
   await festival.screenshot({ path: `test-results/diwali-${info.project.name}.png`, scale: "css" });
   await festival.getByRole("link", { name: "Explore festive gifts" }).click();
   if (info.project.name === "mobile") await page.getByRole("button", { name: "Filters", exact: true }).click();
@@ -122,34 +145,59 @@ test("Diwali highlight links to festive gifts and a Diwali-prefilled enquiry", a
   await expect(page.getByRole("combobox", { name: "The occasion", exact: true })).toHaveValue("Diwali");
 });
 
-test("Diwali marquee can be paused and respects reduced motion", async ({ page }) => {
+test("multi-message marquee moves continuously even under the pointer and can be paused", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.goto("/");
   await page.mouse.move(0, 160);
   const announcement = page.locator(".announcement");
   const track = announcement.locator(".announcement-track");
   await expect(announcement.getByRole("link")).toHaveCount(1);
+  for (const text of ["The Diwali edit is here", "Personalised gifting, made meaningful", "Corporate gifting from 10 gifts"]) {
+    await expect(track.locator(".announcement-group").first()).toContainText(text);
+  }
   await expect(track).toHaveCSS("animation-name", "festival-marquee");
   await expect(track).toHaveCSS("animation-play-state", "running");
   const offset = () => track.evaluate((element) => new DOMMatrix(getComputedStyle(element).transform).m41);
   const start = await offset();
   await expect.poll(async () => Math.abs((await offset()) - start)).toBeGreaterThan(20);
+  await announcement.getByRole("link").hover();
+  await expect(track).toHaveCSS("animation-play-state", "running");
+  const hovered = await offset();
+  await expect.poll(async () => Math.abs((await offset()) - hovered)).toBeGreaterThan(20);
   await announcement.getByRole("button", { name: "Pause announcement" }).click();
   await page.locator(".site-header .brand-logo").focus();
   await expect(track).toHaveCSS("animation-play-state", "paused");
   const paused = await offset();
   await page.waitForTimeout(250);
   expect(await offset()).toBeCloseTo(paused, 1);
-  await announcement.getByRole("button", { name: "Resume announcement" }).click();
+  await announcement.getByRole("button", { name: "Play announcement" }).click();
   await expect(track).toHaveCSS("animation-play-state", "running");
   await page.keyboard.press("Shift+Tab");
   await expect(announcement.getByRole("link")).toBeFocused();
   await expect(track).toHaveCSS("animation-play-state", "paused");
+});
+
+test("reduced-motion marquee has a working explicit Play control and readable static messages", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  const announcement = page.locator(".announcement");
+  const track = announcement.locator(".announcement-track");
   await expect(track).not.toBeVisible();
   await expect(track).toHaveCSS("animation-name", "none");
   await expect(announcement.locator(".announcement-static")).toBeVisible();
-  await expect(announcement.getByRole("button")).toHaveCount(0);
+  await expect(announcement.locator(".announcement-static > span")).toHaveCount(3);
+  await announcement.getByRole("button", { name: "Play announcement" }).click();
+  await expect(track).toBeVisible();
+  await expect(announcement.locator(".announcement-static")).not.toBeVisible();
+  await expect(track).toHaveCSS("animation-play-state", "running");
+  await expect(track).toHaveCSS("animation-iteration-count", "infinite");
+  const offset = () => track.evaluate((element) => new DOMMatrix(getComputedStyle(element).transform).m41);
+  const started = await offset();
+  await expect.poll(async () => Math.abs((await offset()) - started)).toBeGreaterThan(20);
+  await announcement.getByRole("button", { name: "Pause announcement" }).click();
+  await expect(track).not.toBeVisible();
+  await expect(announcement.locator(".announcement-static")).toBeVisible();
+  await expect(announcement.getByRole("button", { name: "Play announcement" })).toBeVisible();
   await announcement.getByRole("link").click();
   await expect(page).toHaveURL(/\/#featured-event$/);
 });
@@ -163,6 +211,8 @@ test("homepage editor is visibly read-only in demo mode and never publishes", as
   await expect(editor.getByLabel("Event name", { exact: true })).toHaveValue("Diwali");
   await expect(editor.getByLabel("Event name", { exact: true })).toBeDisabled();
   await expect(editor.getByRole("button", { name: "Publish homepage" })).toBeDisabled();
+  await expect(editor.getByRole("textbox", { name: "Additional message 1", exact: true })).toHaveValue("Personalised gifting, made meaningful");
+  await expect(editor.getByRole("textbox", { name: "Additional message 2", exact: true })).toHaveValue("Corporate gifting from 10 gifts");
   await expect(editor).toContainText("Read-only demo. To publish changes");
   expect(writes).toBe(0);
   expect((await request.put("/api/admin/homepage", { data: {}, headers: { origin: "http://localhost:3100" } })).status()).toBe(503);

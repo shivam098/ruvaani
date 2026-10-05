@@ -8,7 +8,7 @@ import { chromium, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { connectDb } from "../../src/lib/db";
 import { ProductModel, UserModel, SessionModel, OrderModel, QuoteModel, RateModel, AuditModel, HomepageModel } from "../../src/lib/models";
-import { defaultHomepageContent, type HomepageSettings } from "../../src/lib/homepage-content";
+import { defaultHomepageContent, defaultMarqueeMessages, type HomepageSettings } from "../../src/lib/homepage-content";
 import { demoProducts } from "../fixtures/products";
 
 const base = "http://127.0.0.1:3101";
@@ -222,6 +222,13 @@ test("homepage publishing is administrator-only, validated, versioned and audite
   assert.deepEqual(competing.map((result) => result.status).sort(), [200, 409]);
   assert.equal((await HomepageModel.findById("homepage"))?.revision, 2);
   assert.equal(await AuditModel.countDocuments({ action: "homepage.update" }), 2);
+  await HomepageModel.updateOne({ _id: "homepage" }, { $unset: { "content.marquee.additionalMessages": 1 } });
+  const legacy = await HomepageModel.findById("homepage").lean();
+  const upgraded: HomepageSettings = await (await request("/api/admin/homepage", undefined, adminCookie, "GET")).json();
+  assert.equal(upgraded.content.marquee.message, legacy?.content?.marquee?.message);
+  assert.deepEqual(upgraded.content.marquee.additionalMessages, defaultMarqueeMessages);
+  assert.equal(upgraded.revision, 2);
+  assert.equal(await AuditModel.countDocuments({ action: "homepage.update" }), 2);
 });
 
 test("admin editor publishes a new event, photo and marquee that survive reload and render publicly", { timeout: 180000 }, async () => {
@@ -248,19 +255,30 @@ test("admin editor publishes a new event, photo and marquee that survive reload 
     await editor.getByLabel("Enquiry link destination").fill("/corporate?occasion=Celebrations#enquiry");
     await editor.getByLabel("Small print").fill("Made personal. From ten gifts.");
     await editor.getByLabel("Marquee message").fill("The year-end gifting edit is here");
+    await editor.getByRole("textbox", { name: "Additional message 1", exact: true }).fill("Customised for your team");
+    await editor.getByRole("button", { name: "Remove additional message 2" }).click();
+    await editor.getByRole("button", { name: "Add another message" }).click();
+    await editor.getByRole("textbox", { name: "Additional message 2", exact: true }).fill("From ten thoughtful gifts");
+    await editor.getByRole("button", { name: "Add another message" }).click();
+    await editor.getByRole("textbox", { name: "Additional message 3", exact: true }).fill("Remove this before publishing");
+    await editor.getByRole("button", { name: "Remove additional message 3" }).click();
     await editor.getByLabel("Marquee link").fill("/#featured-event");
     await editor.getByRole("button", { name: "Publish homepage" }).click();
     await expect(editor.getByRole("status")).toContainText("Published.");
-    await expect(page.locator(".announcement").getByRole("link")).toHaveAccessibleName("The year-end gifting edit is here");
+    await expect(page.locator(".announcement").getByRole("link")).toHaveAccessibleName("The year-end gifting edit is here. Customised for your team. From ten thoughtful gifts");
     await page.reload();
     await page.getByRole("tab", { name: "homepage" }).click();
     await expect(editor.getByLabel("Event name", { exact: true })).toHaveValue("Year-end gifting");
     await expect(editor.getByLabel("Marquee message")).toHaveValue("The year-end gifting edit is here");
+    await expect(editor.getByRole("textbox", { name: "Additional message 1", exact: true })).toHaveValue("Customised for your team");
+    await expect(editor.getByRole("textbox", { name: "Additional message 2", exact: true })).toHaveValue("From ten thoughtful gifts");
+    await expect(editor.getByRole("textbox", { name: "Additional message 3", exact: true })).toHaveCount(0);
     const stored = await HomepageModel.findById("homepage");
     assert.equal(stored?.revision, 3);
     assert.equal(stored?.content?.event?.name, "Year-end gifting");
     assert.equal(stored?.content?.event?.status, "Current event");
     assert.equal(stored?.content?.event?.image, "/catalogue/executive-corporate-hamper.webp");
+    assert.deepEqual(Array.from(stored?.content?.marquee?.additionalMessages ?? []), ["Customised for your team", "From ten thoughtful gifts"]);
     assert.equal(await AuditModel.countDocuments({ action: "homepage.update" }), 3);
     const visitor = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "no-preference" });
     const publicPage = await visitor.newPage();
@@ -269,7 +287,7 @@ test("admin editor publishes a new event, photo and marquee that survive reload 
     await expect(publicPage.locator(".festival-status")).toHaveText("Current event · Year-end gifting");
     await expect(publicPage.locator("#featured-event img")).toHaveAttribute("alt", "A curated executive hamper with a ruby ribbon");
     await expect(publicPage.locator("#featured-event img")).toHaveAttribute("src", /executive-corporate-hamper/);
-    await expect(publicPage.locator(".announcement").getByRole("link")).toHaveAccessibleName("The year-end gifting edit is here");
+    await expect(publicPage.locator(".announcement").getByRole("link")).toHaveAccessibleName("The year-end gifting edit is here. Customised for your team. From ten thoughtful gifts");
     assert.equal(await publicPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await publicPage.getByRole("link", { name: "Discover the year-end gifts" }).click();
     await expect(publicPage).toHaveURL(/\/shop\?category=Curated%20hampers/);
@@ -304,11 +322,11 @@ test("admin editor publishes a new event, photo and marquee that survive reload 
     await expect(editor.getByRole("status")).toHaveCount(0);
     await publicPage.reload();
     await expect(publicPage.getByRole("heading", { level: 1 })).toHaveText("Light up their Diwali.");
-    await expect(publicPage.locator(".announcement").getByRole("link")).toHaveAccessibleName("The Diwali edit is here");
+    await expect(publicPage.locator(".announcement").getByRole("link")).toHaveAccessibleName([defaultHomepageContent.marquee.message, ...defaultMarqueeMessages].join(". "));
     const { revision }: HomepageSettings = await response.json();
     const longCopy = {
       event: { ...defaultHomepageContent.event, title: "W".repeat(60), accent: "W".repeat(40), description: "W".repeat(280), primaryLabel: "W".repeat(45), secondaryLabel: "W".repeat(45) },
-      marquee: { ...defaultHomepageContent.marquee, message: "W".repeat(140) },
+      marquee: { ...defaultHomepageContent.marquee, message: "W".repeat(140), additionalMessages: [] },
     };
     const longSaved = await request("/api/admin/homepage", { revision, content: longCopy }, adminCookie, "PUT");
     assert.equal(longSaved.status, 200);

@@ -3,8 +3,8 @@
 **Gifts that create lasting moments.**
 
 A responsive, quote-first gifting catalogue with the supplied RUVAANI logo,
-cream/emerald/gold/ruby palette, and a minimal editorial hero using supplied
-hamper imagery.
+baby-pink base, green lettering, burgundy/gold accents and a light-peach marquee.
+A full-width festive feature and editorial hero use supplied hamper imagery.
 
 **Visual previews:** [Desktop homepage](docs/home-desktop.png) · [Mobile homepage](docs/home-mobile.png).
 
@@ -80,15 +80,24 @@ No database, Razorpay account or API key is needed to browse the catalogue.
 
 The homepage order is **scrolling marquee → logo/navigation → featured event →
 brand slogans → remaining content**. Diwali is the initial featured event.
-The marquee repeats continuously at a readable speed, with pause/resume,
-hover/keyboard pause and a static equivalent for reduced-motion preferences.
+The marquee repeats three distinct messages at a readable speed, with a visible
+Play/Pause control and keyboard-focus pause. Hover no longer stops it.
+Reduced-motion visitors initially see all messages as static text, but can
+explicitly choose Play; other page animations continue to respect their preference.
+The full-width pink/peach event backdrop has original botanical line details and
+a wider image layout, instead of leaving bare gutters around a dark-green card.
 The event uses supplied catalogue photography, not third-party promotional art.
+The newer Diwali poster is a palette reference, not a replacement price list.
 
 ### Change the featured event and marquee
 
 In database mode, sign in as an administrator and open **`/admin` → Homepage**.
 Edit the event name, current/upcoming label, headings, description, photograph,
 image description, action labels/destinations, small print and marquee text/link.
+Add, edit or remove up to four additional marquee messages (five total); all
+messages share the configured marquee link. Previously saved single-message
+settings keep their original message/link and gain the two new default messages
+until edited. An explicitly saved empty additional-message list is respected.
 Choose a photograph from the supplied catalogue library; arbitrary image URLs
 and uploads are not supported. Both features have independent visibility controls.
 Select **Publish homepage** to save both together in MongoDB without redeploying.
