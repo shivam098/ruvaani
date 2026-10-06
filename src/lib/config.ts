@@ -1,4 +1,5 @@
 export const isDemoMode = () => process.env.DEMO_MODE !== "false";
+export const isAnalyticsEnabled = () => !isDemoMode() && process.env.ANALYTICS_ENABLED === "true";
 export const siteUrl = () => process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
 export function requireLiveMode() {

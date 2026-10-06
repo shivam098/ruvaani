@@ -1,4 +1,5 @@
 import mongoose, { Schema, type InferSchemaType, type Model } from "mongoose";
+import { interactionEvents } from "./interaction-data";
 
 const productSchema = new Schema({
   id: { type: String, required: true, unique: true },
@@ -83,6 +84,15 @@ const auditSchema = new Schema({
   target: { type: String, required: true },
 }, { timestamps: true });
 
+const interactionModelSchema = new Schema({
+  _id: { type: String, required: true },
+  day: { type: String, required: true, index: true },
+  event: { type: String, enum: interactionEvents, required: true },
+  target: { type: String, required: true },
+  count: { type: Number, required: true, min: 0 },
+  expiresAt: { type: Date, required: true, index: { expires: 0 } },
+}, { versionKey: false });
+
 const homepageEventFields = {
   enabled: { type: Boolean, required: true },
   name: { type: String, required: true },
@@ -128,4 +138,5 @@ export const QuoteModel = model("Quote", quoteSchema);
 export const RateModel = model("RateLimit", rateSchema);
 export const AuditModel = model("AuditLog", auditSchema);
 export const HomepageModel = model("Homepage", homepageSchema);
+export const InteractionModel = model("Interaction", interactionModelSchema);
 export type StoredOrder = InferSchemaType<typeof orderSchema>;

@@ -7,13 +7,15 @@ import { ArrowUpRight, Check, Heart, PenLine } from "lucide-react";
 import { formatCataloguePrice, MINIMUM_QUOTE_QUANTITY, quoteHref, type CatalogueItem } from "@/lib/catalog-data";
 import { ProductImage } from "./product-image";
 import { useStore } from "./store-provider";
+import type { QuoteContext } from "@/lib/validation";
 
-export function ProductDetails({ product }: { product: CatalogueItem }) {
+export function ProductDetails({ product, quoteContext = {} }: { product: CatalogueItem; quoteContext?: QuoteContext }) {
   const { wishlist, toggleWishlist } = useStore();
   const [quantity, setQuantity] = useState(String(MINIMUM_QUOTE_QUANTITY));
   const [sheet, setSheet] = useState(false);
   const [error, setError] = useState("");
   const saved = wishlist.includes(product.id);
+  const occasion = quoteContext.occasion ?? product.occasion;
   function validateQuantity(event: React.FormEvent<HTMLFormElement>) {
     if (!Number.isSafeInteger(Number(quantity)) || Number(quantity) < MINIMUM_QUOTE_QUANTITY || Number(quantity) > 100000) {
       event.preventDefault();
@@ -33,7 +35,9 @@ export function ProductDetails({ product }: { product: CatalogueItem }) {
       <div className="quote-detail-note"><PenLine size={20} /><p><strong>Made for you, from 10 gifts.</strong><br />Your final quote confirms availability, branding, tax and delivery. No online checkout.</p></div>
       <form action="/corporate#enquiry" className="quote-product-form" onSubmit={validateQuantity}>
         <input type="hidden" name="product" value={product.id} />
-        {product.occasion && <input type="hidden" name="occasion" value={product.occasion} />}
+        {occasion && <input type="hidden" name="occasion" value={occasion} />}
+        {quoteContext.collection && <input type="hidden" name="collection" value={quoteContext.collection} />}
+        {quoteContext.recipient && <input type="hidden" name="recipient" value={quoteContext.recipient} />}
         <label>Quantity for your quote<input type="number" name="quantity" min={10} max={100000} step={1} value={quantity} onChange={(event) => { setQuantity(event.target.value); setError(""); }} required /></label>
         <button className="button button-primary">Request a quote <ArrowUpRight size={18} /></button>
         <button type="button" className="button button-outline detail-wishlist save-gift" aria-label={saved ? "Saved gift. Remove from wishlist" : "Save gift to wishlist"} aria-pressed={saved} onClick={() => toggleWishlist(product.id)}><Heart size={20} fill={saved ? "currentColor" : "none"} />{saved ? "Saved" : "Save gift"}</button>
@@ -45,7 +49,7 @@ export function ProductDetails({ product }: { product: CatalogueItem }) {
         <details open={!product.contents}><summary>Make it yours</summary><p>{product.personalizable ? "Discuss company branding, names, messages and presentation with our team. Artwork and customisation are approved before production." : "Include this item in a bespoke hamper and discuss the available finishes and presentation with our team."} No personalisation fee is assumed.</p></details>
         <details><summary>Pricing & delivery</summary><p>{product.priceType === "starting" ? "This is the starting price advertised on the supplied poster, not a fixed final price. " : product.cataloguePrice ? "The displayed price is transcribed from the supplied product sheet. " : "A fixed price was not supplied for this item. "}Quantity, exact contents, taxes, branding and delivery are confirmed in writing. No online payment is collected here. <Link href="/policies/shipping">Delivery information</Link>.</p></details>
       </div>
-      <div className="bulk-note">Building a bespoke collection? <Link href={quoteHref()}>Share your complete gifting brief <ArrowUpRight size={14} /></Link></div>
+      <div className="bulk-note">Building a bespoke collection? <Link href={quoteHref(quoteContext)}>Share your complete gifting brief <ArrowUpRight size={14} /></Link></div>
     </div>
   </div>;
 }

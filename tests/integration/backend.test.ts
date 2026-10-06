@@ -7,7 +7,7 @@ import { MongoMemoryReplSet } from "mongodb-memory-server";
 import { chromium, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { connectDb } from "../../src/lib/db";
-import { ProductModel, UserModel, SessionModel, OrderModel, QuoteModel, RateModel, AuditModel, HomepageModel } from "../../src/lib/models";
+import { ProductModel, UserModel, SessionModel, OrderModel, QuoteModel, RateModel, AuditModel, HomepageModel, InteractionModel } from "../../src/lib/models";
 import { defaultHomepageContent, defaultMarqueeMessages, type HomepageSettings } from "../../src/lib/homepage-content";
 import { demoProducts } from "../fixtures/products";
 
@@ -32,12 +32,12 @@ before(async () => {
   process.env.MONGODB_URI = replica.getUri();
   process.env.MONGODB_DB = "ruvaani_integration_test";
   await connectDb();
-  for (const model of [ProductModel, UserModel, SessionModel, OrderModel, QuoteModel, RateModel, AuditModel, HomepageModel]) await model.createIndexes();
+  for (const model of [ProductModel, UserModel, SessionModel, OrderModel, QuoteModel, RateModel, AuditModel, HomepageModel, InteractionModel]) await model.createIndexes();
   await ProductModel.insertMany(demoProducts);
   server = spawn(process.execPath, [resolve("node_modules/next/dist/bin/next"), "dev", "--port", "3101", "--hostname", "127.0.0.1"], {
     cwd: process.cwd(),
     env: {
-      ...process.env, DEMO_MODE: "false", NEXT_PUBLIC_SITE_URL: base,
+      ...process.env, DEMO_MODE: "false", ANALYTICS_ENABLED: "true", NEXT_PUBLIC_SITE_URL: base,
       RUVAANI_INTEGRATION_TEST: "1",
       NEXT_TELEMETRY_DISABLED: "1",
       RAZORPAY_KEY_ID: "rzp_test_fixture", RAZORPAY_KEY_SECRET: "test-only-key",
@@ -340,7 +340,7 @@ test("admin editor publishes a new event, photo and marquee that survive reload 
     await expect(editor.getByRole("status")).toContainText("Published.");
     await publicPage.goto(base);
     await expect(publicPage.locator("#featured-event")).toHaveCount(0);
-    await expect(publicPage.getByRole("heading", { level: 1 })).toContainText("Gifts that create");
+    await expect(publicPage.getByRole("heading", { level: 1 })).toHaveText("Thoughtfully chosen. Beautifully given.");
     await expect(publicPage.locator(".announcement").getByRole("link")).toHaveAttribute("href", "/shop");
     await editor.getByLabel("Show scrolling marquee").uncheck();
     await editor.getByRole("button", { name: "Publish homepage" }).click();
@@ -380,6 +380,66 @@ test("admin editor publishes a new event, photo and marquee that survive reload 
       assert.equal(await link.evaluate((element) => element.scrollWidth <= element.clientWidth), true, "Custom button labels must remain readable rather than clipped.");
     }
     assert.equal((await request("/api/admin/homepage", { revision: next.revision, content: defaultHomepageContent }, adminCookie, "PUT")).status, 200);
+  } finally { await browser.close(); }
+});
+
+test("analytics aggregates finite daily counts, rejects extra data and protects reports", async () => {
+  await InteractionModel.deleteMany({});
+  const body = { event: "category_click", target: "wellness" } as const;
+  for (const response of await Promise.all(Array.from({ length: 12 }, () => request("/api/analytics", body, "")))) assert.equal(response.status, 204);
+  const record = await InteractionModel.findOne({ event: body.event, target: body.target }).lean();
+  assert.ok(record);
+  assert.equal(record.count, 12);
+  assert.deepEqual(Object.keys(record).sort(), ["_id", "count", "day", "event", "expiresAt", "target"]);
+  assert.ok(record.expiresAt.getTime() > Date.now() + 89 * 86400000);
+  assert.ok(record.expiresAt.getTime() <= Date.now() + 90 * 86400000);
+  assert.equal((await request("/api/analytics", { ...body, email: "private@example.com" }, "")).status, 400);
+  assert.equal((await request("/api/analytics", { event: "category_click", target: "/private?email=private" }, "")).status, 400);
+  assert.equal((await fetch(`${base}/api/analytics`, { method: "POST", headers: { Origin: "https://foreign.example", "Content-Type": "application/json" }, body: JSON.stringify(body) })).status, 403);
+  for (const header of ["dnt", "sec-gpc"]) {
+    assert.equal((await fetch(`${base}/api/analytics`, { method: "POST", headers: { Origin: base, "Content-Type": "application/json", [header]: "1" }, body: JSON.stringify(body) })).status, 204);
+  }
+  assert.equal((await InteractionModel.findById(record._id))?.count, 12);
+  assert.equal((await request("/api/admin/analytics", undefined, "", "GET")).status, 401);
+  assert.equal((await request("/api/admin/analytics", undefined, cookie, "GET")).status, 403);
+  const response = await request("/api/admin/analytics", undefined, adminCookie, "GET");
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("cache-control"), "no-store");
+  const report = await response.json();
+  assert.equal(report.enabled, true);
+  assert.equal(report.submittedEnquiries, await QuoteModel.countDocuments());
+  assert.deepEqual(report.interactions, [{ ...body, count: 12 }]);
+  assert.equal(JSON.stringify(report).includes("buyer@example.com"), false);
+});
+
+test("live browser analytics sends only enumerated interactions and honours privacy preferences", { timeout: 90000 }, async () => {
+  const browser = await chromium.launch();
+  try {
+    const page = await browser.newPage();
+    const sent: object[] = [];
+    page.on("request", (request) => { if (request.url().endsWith("/api/analytics")) sent.push(request.postDataJSON()); });
+    const view = page.waitForResponse((response) => response.url().endsWith("/api/analytics") && response.request().postDataJSON().event === "catalogue_view");
+    await page.goto(`${base}/catalogue?email=private-query@example.com`);
+    assert.equal((await view).status(), 204);
+    assert.deepEqual(sent, [{ event: "catalogue_view", target: "hub" }]);
+    const download = page.waitForResponse((response) => response.url().endsWith("/api/analytics") && response.request().postDataJSON().event === "catalogue_download");
+    await page.locator(".catalogue-edition").first().getByRole("link", { name: "Download PDF" }).click();
+    assert.equal((await download).status(), 204);
+    assert.equal(JSON.stringify(sent).includes("private-query"), false);
+    for (const preference of ["doNotTrack", "globalPrivacyControl"]) {
+      const context = await browser.newContext();
+      await context.addInitScript(({ preference }) => { Object.defineProperty(navigator, preference, { value: preference === "doNotTrack" ? "1" : true }); }, { preference });
+      const privatePage = await context.newPage();
+      let writes = 0;
+      privatePage.on("request", (request) => { if (request.url().endsWith("/api/analytics")) writes++; });
+      await privatePage.goto(`${base}/catalogue`);
+      assert.equal(await privatePage.evaluate((key) => Reflect.get(navigator, key), preference), preference === "doNotTrack" ? "1" : true);
+      await privatePage.getByRole("button", { name: "Search gifts", exact: true }).click();
+      await expect(privatePage.getByRole("dialog")).toBeVisible();
+      await privatePage.waitForTimeout(200);
+      assert.equal(writes, 0, `${preference} must suppress client telemetry`);
+      await context.close();
+    }
   } finally { await browser.close(); }
 });
 

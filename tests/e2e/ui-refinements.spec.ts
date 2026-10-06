@@ -6,7 +6,7 @@ test("storefront copy, forms and actions keep a readable scale at narrow and wid
   for (const width of [320, 390, 768, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
     for (const [route, selectors] of [
-      ["/", [".premium-hero-copy > p", ".gifting-moments p", ".product-subtitle"]],
+      ["/", [".festival-details > p:not(.festival-note)", ".brand-note p", ".product-subtitle"]],
       ["/shop", [".product-subtitle", ".catalog-search input"]],
       ["/corporate#enquiry", [".corporate-form input:not([type=checkbox])", ".corporate-form select", ".corporate-form textarea"]],
       ["/contact", [".contact-grid p"]],
@@ -40,20 +40,23 @@ test("key controls offer at least 44px touch targets", async ({ page }) => {
   }
 });
 
-test("promotional cards explore real collections without coupon or discount claims", async ({ page }, info) => {
+test("unified discovery explores real edits without coupon or discount claims", async ({ page }, info) => {
   await page.goto("/");
-  const cards = page.getByRole("region", { name: "Gifting occasions" }).getByRole("link");
-  await expect(cards).toHaveCount(3);
-  await expect(cards.nth(0)).toHaveAttribute("href", "/corporate");
-  await expect(cards.nth(1)).toHaveAttribute("href", /occasion=Weddings/);
-  await expect(cards.nth(2)).toHaveAttribute("href", "/shop?category=Divine%20%26%20festive%20gifts");
+  const discovery = page.locator(".collection-discovery");
+  await discovery.getByRole("button", { name: "By occasion" }).click();
+  const cards = discovery.locator(".discovery-card");
+  await expect(cards).toHaveCount(7);
+  await expect(cards.nth(0)).toHaveAttribute("href", "/occasions/corporate");
+  await expect(cards.nth(4)).toHaveAttribute("href", "/occasions/weddings");
+  await expect(cards.nth(5)).toHaveAttribute("href", "/occasions/festive");
   for (const card of await cards.all()) {
-    await expect(card.getByRole("heading", { level: 2 })).toBeVisible();
-    await expect(card.locator(".discovery-action")).toBeVisible();
+    await expect(card.getByRole("heading", { level: 3 })).toBeVisible();
+    await expect(card.locator(".discovery-copy > span")).toBeVisible();
     await expect(card).not.toContainText(/coupon|discount|% off|sale ends|claim offer/i);
   }
-  await cards.nth(2).click();
-  await expect(page.locator(".product-card")).toHaveCount(5);
+  await cards.nth(5).click();
+  await expect(page.getByText("12 thoughtful finds")).toBeVisible();
+  await expect(page.locator(".product-card")).toHaveCount(6);
   await page.evaluate(async () => {
     document.querySelectorAll("img").forEach((image) => { image.loading = "eager"; });
     await Promise.all(Array.from(document.images, (image) => image.decode()));

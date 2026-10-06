@@ -6,6 +6,7 @@ import { ArrowUpRight, Check, Send } from "lucide-react";
 import { quoteSchema, type QuotePrefill } from "@/lib/validation";
 import { catalogueProducts, MINIMUM_QUOTE_BUDGET, occasions } from "@/lib/catalog-data";
 import { contactNumbers } from "@/lib/brand";
+import { findCollection } from "@/lib/discovery";
 import { apiRequest } from "@/lib/client-api";
 import { useStore } from "./store-provider";
 
@@ -48,7 +49,7 @@ export function CorporateForm({ initial = {}, warning = "" }: { initial?: QuoteP
       <label>Budget per gift (₹)<input name="budget" type="number" min={MINIMUM_QUOTE_BUDGET} max={1000000} value={budget} onChange={(e) => setBudget(Number(e.target.value))} required /></label>
       <label>Your ideal delivery date<input name="deliveryDate" type="date" min={new Date().toISOString().slice(0, 10)} required /></label>
       <label className="span-two">Delivery locations<input name="locations" placeholder="City, office or multiple destinations" required minLength={2} maxLength={500} /></label>
-      <label className="span-two">Anything else we should know?<textarea name="requirements" rows={3} maxLength={2000} defaultValue={initial.recipient ? `Gifts for: ${initial.recipient}.` : ""} placeholder="Your brand, their interests, a special little detail..." /></label>
+      <label className="span-two">Anything else we should know?<textarea name="requirements" rows={3} maxLength={2000} defaultValue={[initial.collection ? `Collection: ${findCollection(initial.collection)?.title}.` : "", initial.recipient ? `Gifts for: ${initial.recipient}.` : ""].filter(Boolean).join("\n")} placeholder="Your brand, their interests, a special little detail..." /></label>
     </div>
     <label className="checkbox-label"><input type="checkbox" name="personalization" defaultChecked />I&apos;d love to include our branding or a personal message.</label>
     <div className="quote-estimate"><span>Your starting gift budget</span><strong>{new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(quantity * budget)}</strong><small>Planning estimate only. Your final quote includes confirmed customization, tax and delivery.</small></div>

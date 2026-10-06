@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { catalogueProducts, MINIMUM_QUOTE_BUDGET, occasions, recipients } from "./catalog-data";
+import { findCollection } from "./discovery";
 
 export const quotePrefillSchema = z.object({
   product: z.string().refine((id) => catalogueProducts.some((product) => product.id === id), "That catalogue selection is no longer available.").optional(),
@@ -7,8 +8,11 @@ export const quotePrefillSchema = z.object({
   budget: z.coerce.number().int().min(MINIMUM_QUOTE_BUDGET).max(1000000).optional(),
   occasion: z.string().refine((value) => occasions.includes(value)).optional(),
   recipient: z.string().refine((value) => recipients.includes(value)).optional(),
+  collection: z.string().refine((value) => Boolean(findCollection(value)), "That collection is not available.").optional(),
 });
 export type QuotePrefill = z.infer<typeof quotePrefillSchema>;
+export const quoteContextSchema = quotePrefillSchema.pick({ collection: true, occasion: true, recipient: true });
+export type QuoteContext = z.infer<typeof quoteContextSchema>;
 
 export const cartLineSchema = z.object({
   productId: z.string().regex(/^rv-\d{3}$/),

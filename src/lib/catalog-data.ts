@@ -8,8 +8,8 @@ export const categories = [
   "Branding & presentation",
 ] as const;
 
-export const occasions = ["Navratri", "Diwali", "Employee appreciation", "Client gifting", "Corporate events", "Weddings", "Celebrations"];
-export const recipients = ["Employees", "Clients", "Partners", "Friends & family"];
+export const occasions = ["Navratri", "Diwali", "Holi", "Rakhi", "Christmas", "New Year", "Employee appreciation", "Client gifting", "Corporate events", "Weddings", "Celebrations"];
+export const recipients = ["Employees", "Clients", "Partners", "Wedding guests", "Friends & family", "Personal"];
 export const MINIMUM_QUOTE_QUANTITY = 10;
 export const MINIMUM_QUOTE_BUDGET = 99;
 
@@ -118,7 +118,7 @@ export function filterCatalogue(products: CatalogueItem[], filters: { query?: st
   return result;
 }
 
-export function quoteHref(options: { product?: string; quantity?: number; budget?: number; occasion?: string; recipient?: string } = {}) {
+export function quoteHref(options: { product?: string; quantity?: number; budget?: number; occasion?: string; recipient?: string; collection?: string } = {}) {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(options)) if (value !== undefined && value !== "") params.set(key, String(value));
   return `/corporate${params.size ? `?${params}` : ""}#enquiry`;

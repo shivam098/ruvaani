@@ -2,9 +2,9 @@ import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
 test("essential pages pass automated WCAG A/AA checks", async ({ page }) => {
-  test.setTimeout(90000);
+  test.setTimeout(180000);
   const failures = [];
-  for (const route of ["/", "/shop", "/products/single-premium-box", "/corporate", "/gift-finder", "/account", "/contact", "/policies/terms"]) {
+  for (const route of ["/", "/shop", "/products/single-premium-box", "/corporate", "/gift-finder", "/account", "/contact", "/policies/terms", "/collections", "/collections/wellness", "/festivals/diwali", "/occasions/weddings", "/catalogue", "/catalogue/navratri"]) {
     await page.goto(route);
     const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
     for (const violation of results.violations) {

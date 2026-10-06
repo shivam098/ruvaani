@@ -5,9 +5,9 @@ test("premium hero uses supplied branding and remains responsive", async ({ page
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Small gifts. Big blessings.");
-  await expect(page.locator(".premium-hero").getByRole("heading", { level: 2 })).toContainText("Gifts that create");
-  await expect(page.locator(".premium-hero .premium-eyebrow")).toHaveCount(0);
-  await expect(page.locator(".premium-hero")).not.toContainText("RUVAANI · CREATIONS & PACKAGING");
+  await expect(page.locator(".premium-hero")).toHaveCount(0);
+  await expect(page.locator(".collection-discovery").getByRole("heading", { level: 2 })).toContainText("Find a gift");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
   await expect(page.locator(".site-header .brand-monogram")).toBeVisible();
   await expect(page.locator(".site-header .brand-wordmark")).toBeVisible();
   for (const area of [".site-header", ".site-footer"]) {
@@ -25,7 +25,7 @@ test("premium hero uses supplied branding and remains responsive", async ({ page
     expect(monogram!.x + monogram!.width).toBeLessThan(wordmark!.x);
     expect(tagline!.y).toBeGreaterThanOrEqual(wordmark!.y + wordmark!.height);
   }
-  await expect(page.locator(".hero-photo")).toBeVisible();
+  await expect(page.locator(".festival-image")).toBeVisible();
   expect(await page.locator(".button-primary").first().evaluate((element) => getComputedStyle(element).backgroundColor)).toBe("rgb(6, 76, 60)");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.evaluate(async () => {
@@ -39,15 +39,15 @@ test("premium hero uses supplied branding and remains responsive", async ({ page
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
   await page.locator(".site-header .brand-logo").screenshot({ path: `test-results/logo-header-${info.project.name}.png`, scale: "css" });
   await page.screenshot({ path: `test-results/home-${info.project.name}.png`, fullPage: true, scale: "css" });
-  await page.getByRole("link", { name: "Explore the collection", exact: true }).first().click();
+  await page.locator(".collection-discovery").getByRole("link", { name: "Explore all gifts", exact: true }).click();
   await expect(page).toHaveURL(/\/shop/);
   expect(errors).toEqual([]);
 });
 
-test("marquee is at the very top, followed by navigation, event and slogans", async ({ page }, info) => {
+test("marquee is at the top, followed by navigation, event, unified discovery and featured gifts", async ({ page }, info) => {
   await page.goto("/");
   const order = await page.evaluate(() => {
-    const selectors = [".announcement", ".site-header", "#featured-event", ".premium-hero", ".gifting-moments"];
+    const selectors = [".announcement", ".site-header", "#featured-event", ".collection-discovery", ".featured-edit", ".catalogue-callout", ".ruvaani-promise", ".brand-note"];
     return selectors.map((selector) => {
       const element = document.querySelector(selector);
       if (!element) throw new Error(`Missing homepage block: ${selector}`);
@@ -137,9 +137,10 @@ test("Diwali highlight links to festive gifts and a Diwali-prefilled enquiry", a
   expect(banner!.height, "full-width festival feature should remain a restrained hero, not a full-screen poster").toBeLessThanOrEqual(info.project.name === "mobile" ? 600 : 520);
   await festival.screenshot({ path: `test-results/diwali-${info.project.name}.png`, scale: "css" });
   await festival.getByRole("link", { name: "Explore festive gifts" }).click();
-  if (info.project.name === "mobile") await page.getByRole("button", { name: "Filters", exact: true }).click();
-  await expect(page.getByRole("radio", { name: "Divine & festive gifts" })).toBeChecked();
-  await expect(page.locator(".product-card")).toHaveCount(5);
+  await expect(page).toHaveURL(/\/festivals\/diwali/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("The Diwali Edit");
+  await expect(page.getByText("10 thoughtful finds")).toBeVisible();
+  await expect(page.locator(".product-card")).toHaveCount(6);
   await page.locator(".announcement").getByRole("link", { name: "The Diwali edit is here" }).click();
   await page.getByRole("button", { name: "Diwali", exact: true }).click();
   await festival.getByRole("link", { name: "Plan your Diwali gifting" }).click();
@@ -178,7 +179,7 @@ test("marquee scrolls automatically without playback buttons and can be dismisse
   await page.keyboard.press("Enter");
   await expect(announcement).toHaveCount(0);
   await expect(page.locator(".site-header .brand-logo")).toBeFocused();
-  await page.getByRole("link", { name: "Explore the collection", exact: true }).click();
+  await page.locator(".collection-discovery").getByRole("link", { name: "Explore all gifts", exact: true }).click();
   await expect(page).toHaveURL(/\/shop/);
   await expect(announcement).toHaveCount(0);
   await page.reload();

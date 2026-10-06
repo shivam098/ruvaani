@@ -10,7 +10,7 @@ test("Navratri opens first and Diwali is one keyboard or pointer action away", a
   await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
   await expect(page.locator(".festival-status")).toHaveText("Upcoming event · Navratri");
   await expect(page.locator("#featured-event img")).toHaveAttribute("src", /navratri-collection/);
-  await expect(page.getByRole("link", { name: "Explore gifts from ₹99", exact: true })).toHaveAttribute("href", "/shop?q=Navratri");
+  await expect(page.getByRole("link", { name: "Explore gifts from ₹99", exact: true })).toHaveAttribute("href", "/festivals/navratri");
   await diwali.focus();
   await page.keyboard.press("Enter");
   await expect(diwali).toBeFocused();

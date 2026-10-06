@@ -1,0 +1,18 @@
+import Image from "next/image";
+import Link from "next/link";
+import { ArrowUpRight, Gift } from "lucide-react";
+import { collectionKey, collectionQuoteHref, type GiftCollection } from "@/lib/discovery";
+import { Catalog } from "./catalog";
+import { CatalogueCallout } from "./catalogue-callout";
+
+export function CollectionLanding({ collection, initial }: { collection: GiftCollection; initial: Record<string, string | string[] | undefined> }) {
+  const quote = collectionQuoteHref(collection);
+  const edition = collection.kind === "festival" && ["diwali", "navratri"].includes(collection.slug) ? collection.slug : collection.slug === "corporate" ? "corporate" : collection.slug === "weddings" || collection.slug === "wedding-season" ? "wedding" : collection.slug === "festive" || collection.slug === "festive-gifts" ? "festive" : "collection";
+  return <>
+    <section className={`wrap edit-hero ${collection.image ? "" : "edit-hero-request"}`}><div><div className="breadcrumb"><Link href="/">Home</Link><span>/</span><Link href={`/${{ category: "collections", occasion: "occasions", festival: "festivals" }[collection.kind]}`}>{collection.kind === "category" ? "Categories" : collection.kind === "occasion" ? "Occasions" : "Festivals"}</Link></div><span className="eyebrow">{collection.kind === "festival" ? "A RUVAANI FESTIVAL EDIT" : "CURATED FOR YOUR MOMENT"}</span><h1>{collection.title}</h1><p className="edit-caption">{collection.caption}</p><p>{collection.description}</p><div className="catalogue-actions"><a href="#edit-collection" className="button button-primary">{collection.productIds.length ? "Explore the selection" : "Discuss your brief"} <ArrowUpRight size={18} /></a><Link href={quote} className="text-link" data-track-event="enquiry_start" data-track-target="collection">Let&apos;s curate your gifting <ArrowUpRight size={18} /></Link></div></div>{collection.image ? <div className="edit-hero-image"><Image src={collection.image} alt={`${collection.title}: inspiration from the supplied RUVAANI catalogue`} fill preload sizes="(max-width: 760px) 90vw, 45vw" /></div> : <div className="edit-hero-illustration"><Gift size={90} strokeWidth={.8} /><span>Your brief.<br />Our conversation.</span></div>}</section>
+    <section id="edit-collection" aria-labelledby="edit-collection-heading"><div className="wrap edit-collection-intro"><span className="eyebrow">THE COLLECTION</span><h2 id="edit-collection-heading">{collection.productIds.length ? "Thoughtfully selected." : "Begin with your brief."}</h2><p>Browse by indicative price or recipient. Final contents, branding and delivery are agreed in your quote.</p></div><Catalog key={`${collectionKey(collection)}:${JSON.stringify(initial)}`} initial={initial} productIds={collection.productIds} quoteHref={quote} /></section>
+    <section className="wrap customisation-note"><span className="eyebrow">THE PERSONAL TOUCH</span><h2>Your moment.<br /><em>Your finishing touches.</em></h2><p>Discuss names, messages, company branding and packaging. Availability and any charges depend on your selection; nothing is added automatically.</p><Link href={quote} className="button button-outline">Request a Custom Quote <ArrowUpRight size={18} /></Link></section>
+    <CatalogueCallout edition={edition} quote={quote} />
+    <section className="wrap edit-enquiry"><span className="eyebrow">TOGETHER, FROM 10 GIFTS</span><h2>Let&apos;s curate <em>your gifting.</em></h2><p>Share the occasion, people and budget. We&apos;ll confirm the possibilities in a quotation.</p><Link href={quote} className="button button-primary" data-track-event="enquiry_start" data-track-target="collection">Create your gifting brief <ArrowUpRight size={18} /></Link></section>
+  </>;
+}
