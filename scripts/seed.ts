@@ -1,10 +1,10 @@
 import { connectDb } from "../src/lib/db";
-import { ProductModel, UserModel, SessionModel, OrderModel, QuoteModel, RateModel, AuditModel } from "../src/lib/models";
+import { ProductModel, UserModel, SessionModel, OrderModel, QuoteModel, RateModel, AuditModel, HomepageModel, InteractionModel } from "../src/lib/models";
 
 async function main() {
   const db = await connectDb();
   try {
-    for (const model of [ProductModel, UserModel, SessionModel, OrderModel, QuoteModel, RateModel, AuditModel]) {
+    for (const model of [ProductModel, UserModel, SessionModel, OrderModel, QuoteModel, RateModel, AuditModel, HomepageModel, InteractionModel]) {
       await model.createIndexes();
     }
     console.log("Database indexes created. Existing records were not changed.");

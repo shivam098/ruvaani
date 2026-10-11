@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
 import { DM_Sans, Cormorant_Garamond } from "next/font/google";
 import { getProducts } from "@/lib/catalog";
-import { isDemoMode, siteUrl } from "@/lib/config";
+import { isDemoMode, isAnalyticsEnabled, siteUrl } from "@/lib/config";
 import { StoreProvider } from "@/components/store-provider";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { AnnouncementMarquee } from "@/components/announcement-marquee";
+import { getHomepageSettings } from "@/lib/homepage-settings";
+import { MobileEnquiry } from "@/components/mobile-enquiry";
+import { InteractionAnalytics } from "@/components/interaction-analytics";
 import "./globals.css";
+import "./redesign.css";
 
 const sans = DM_Sans({
   variable: "--font-dm-sans",
@@ -29,7 +34,7 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const products = await getProducts();
+  const [products, homepage] = await Promise.all([getProducts(), getHomepageSettings()]);
   const demo = isDemoMode();
   return (
     <html
@@ -39,9 +44,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <StoreProvider products={products} demo={demo}>
           <a className="skip-link" href="#main-content">Skip to content</a>
+          <AnnouncementMarquee announcement={homepage.content.marquee} />
           <SiteHeader />
           <main id="main-content">{children}</main>
           <SiteFooter demo={demo} />
+          <MobileEnquiry />
+          <InteractionAnalytics enabled={isAnalyticsEnabled()} />
         </StoreProvider>
       </body>
     </html>

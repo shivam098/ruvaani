@@ -4,8 +4,11 @@ import { randomUUID, createHmac } from "node:crypto";
 import { spawn, execFileSync, type ChildProcess } from "node:child_process";
 import { resolve } from "node:path";
 import { MongoMemoryReplSet } from "mongodb-memory-server";
+import { chromium, expect } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 import { connectDb } from "../../src/lib/db";
-import { ProductModel, UserModel, SessionModel, OrderModel, QuoteModel, RateModel, AuditModel } from "../../src/lib/models";
+import { ProductModel, UserModel, SessionModel, OrderModel, QuoteModel, RateModel, AuditModel, HomepageModel, InteractionModel } from "../../src/lib/models";
+import { defaultHomepageContent, defaultMarqueeMessages, type HomepageSettings } from "../../src/lib/homepage-content";
 import { demoProducts } from "../fixtures/products";
 
 const base = "http://127.0.0.1:3101";
@@ -29,12 +32,12 @@ before(async () => {
   process.env.MONGODB_URI = replica.getUri();
   process.env.MONGODB_DB = "ruvaani_integration_test";
   await connectDb();
-  for (const model of [ProductModel, UserModel, SessionModel, OrderModel, QuoteModel, RateModel, AuditModel]) await model.createIndexes();
+  for (const model of [ProductModel, UserModel, SessionModel, OrderModel, QuoteModel, RateModel, AuditModel, HomepageModel, InteractionModel]) await model.createIndexes();
   await ProductModel.insertMany(demoProducts);
   server = spawn(process.execPath, [resolve("node_modules/next/dist/bin/next"), "dev", "--port", "3101", "--hostname", "127.0.0.1"], {
     cwd: process.cwd(),
     env: {
-      ...process.env, DEMO_MODE: "false", NEXT_PUBLIC_SITE_URL: base,
+      ...process.env, DEMO_MODE: "false", ANALYTICS_ENABLED: "true", NEXT_PUBLIC_SITE_URL: base,
       RUVAANI_INTEGRATION_TEST: "1",
       NEXT_TELEMETRY_DISABLED: "1",
       RAZORPAY_KEY_ID: "rzp_test_fixture", RAZORPAY_KEY_SECRET: "test-only-key",
@@ -105,10 +108,23 @@ test("corporate enquiry is persisted with consent and rejected if invalid", asyn
   assert.equal((await request("/api/quotes", { ...body, productId: "rc-999" }, "")).status, 400);
   assert.equal((await request("/api/quotes", { ...body, productName: "Injected name" }, "")).status, 400);
   assert.equal(await QuoteModel.countDocuments(), 1);
+  for (const [productId, budget, productName] of [
+    ["rc-020", 99, "Navratri Kanya / Kanjak Cone Hamper"],
+    ["rc-021", 149, "Navratri Kanya / Kanjak Hamper"],
+  ]) {
+    const response = await request("/api/quotes", { ...body, productId, budget, occasion: "Navratri" }, "");
+    assert.equal(response.status, 201, await response.clone().text());
+    const saved = await QuoteModel.findOne({ reference: (await response.json()).reference });
+    assert.equal(saved?.budget, budget);
+    assert.equal(saved?.occasion, "Navratri");
+    assert.equal(saved?.productName, productName);
+  }
+  assert.equal((await request("/api/quotes", { ...body, productId: "rc-020", budget: 98 }, "")).status, 400);
+  assert.equal(await QuoteModel.countDocuments(), 3);
 });
 
 test("quote-only checkout rejects legacy and new catalogue items without reserving stock", async () => {
-  for (const productId of ["rv-001", "rc-017", "rc-001"]) {
+  for (const productId of ["rv-001", "rc-017", "rc-001", "rc-020", "rc-021"]) {
     const response = await request("/api/checkout", { address, items: [{ productId, quantity: 10 }], idempotencyKey: randomUUID() });
     assert.equal(response.status, 410);
     assert.match((await response.json()).error, /quote-only/);
@@ -190,6 +206,241 @@ test("admin changes require authorization, enforce transitions, and create audit
   assert.equal((await request("/api/admin", { kind: "order", id: paid._id.toString(), status: "PROCESSING" }, adminCookie, "PATCH")).status, 200);
   assert.equal(await AuditModel.countDocuments(), 1);
   assert.equal((await OrderModel.findById(paid._id))?.status, "PROCESSING");
+});
+
+test("homepage publishing is administrator-only, validated, versioned and audited", { timeout: 120000 }, async () => {
+  const payload = { revision: 0, content: defaultHomepageContent };
+  assert.equal((await request("/api/admin/homepage", payload, "", "PUT")).status, 401);
+  assert.equal((await request("/api/admin/homepage", payload, cookie, "PUT")).status, 403);
+  assert.equal((await request("/api/admin/homepage", undefined, "", "GET")).status, 401);
+  assert.equal((await request("/api/admin/homepage", undefined, cookie, "GET")).status, 403);
+  assert.equal((await fetch(`${base}/api/admin/homepage`, { method: "PUT", headers: { Origin: "https://untrusted.example", Cookie: adminCookie, "Content-Type": "application/json" }, body: JSON.stringify(payload) })).status, 403);
+  const initial = await request("/api/admin/homepage", undefined, adminCookie, "GET");
+  assert.deepEqual(await initial.json(), payload);
+  for (const change of [
+    { ...payload, revision: -1 },
+    { ...payload, content: { ...defaultHomepageContent, marquee: { ...defaultHomepageContent.marquee, href: "//untrusted.example" } } },
+    { ...payload, content: { ...defaultHomepageContent, event: { ...defaultHomepageContent.event, image: "/missing.webp" } } },
+    { ...payload, content: { ...defaultHomepageContent, injected: true } },
+  ]) assert.equal((await request("/api/admin/homepage", change, adminCookie, "PUT")).status, 400);
+  assert.equal(await HomepageModel.countDocuments(), 0);
+  const response = await request("/api/admin/homepage", payload, adminCookie, "PUT");
+  assert.equal(response.status, 200, await response.clone().text());
+  assert.equal((await response.json()).revision, 1);
+  assert.equal((await HomepageModel.findById("homepage"))?.content?.event?.name, "Diwali");
+  assert.equal(await AuditModel.countDocuments({ action: "homepage.update" }), 1);
+  assert.equal((await request("/api/admin/homepage", payload, adminCookie, "PUT")).status, 409);
+  assert.equal(await AuditModel.countDocuments({ action: "homepage.update" }), 1);
+  const competing = await Promise.all([1, 2].map((index) => request("/api/admin/homepage", { revision: 1, content: { ...defaultHomepageContent, marquee: { ...defaultHomepageContent.marquee, message: `Announcement ${index}` } } }, adminCookie, "PUT")));
+  assert.deepEqual(competing.map((result) => result.status).sort(), [200, 409]);
+  assert.equal((await HomepageModel.findById("homepage"))?.revision, 2);
+  assert.equal(await AuditModel.countDocuments({ action: "homepage.update" }), 2);
+  await HomepageModel.updateOne({ _id: "homepage" }, { $unset: { "content.marquee.additionalMessages": 1, "content.additionalEvent": 1, "content.defaultEvent": 1 } });
+  const legacy = await HomepageModel.findById("homepage").lean();
+  const upgraded: HomepageSettings = await (await request("/api/admin/homepage", undefined, adminCookie, "GET")).json();
+  assert.equal(upgraded.content.marquee.message, legacy?.content?.marquee?.message);
+  assert.deepEqual(upgraded.content.marquee.additionalMessages, defaultMarqueeMessages);
+  assert.deepEqual(upgraded.content.event, defaultHomepageContent.event);
+  assert.equal(upgraded.content.additionalEvent.name, "Navratri");
+  assert.equal(upgraded.content.defaultEvent, "additionalEvent");
+  assert.equal(upgraded.revision, 2);
+  assert.equal(await AuditModel.countDocuments({ action: "homepage.update" }), 2);
+});
+
+test("admin editor publishes a new event, photo and marquee that survive reload and render publicly", { timeout: 180000 }, async () => {
+  const browser = await chromium.launch();
+  try {
+    const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+    await context.addCookies([{ name: "ruvaani_session", value: adminCookie.split("=")[1], url: base }]);
+    const page = await context.newPage();
+    await page.goto(`${base}/admin`);
+    await page.getByRole("tab", { name: "homepage" }).click();
+    const editor = page.getByRole("form", { name: "Homepage event and marquee" });
+    assert.deepEqual((await new AxeBuilder({ page }).include(".homepage-editor").withTags(["wcag2a", "wcag2aa"]).analyze()).violations, []);
+    await editor.getByLabel("Event name", { exact: true }).fill("Year-end gifting");
+    await editor.getByLabel("Event timing").selectOption("Current event");
+    await editor.getByLabel("Section label").fill("THE YEAR-END EDIT");
+    await editor.getByLabel("Heading", { exact: true }).fill("Celebrate their");
+    await editor.getByLabel("Highlighted heading").fill("brilliant year.");
+    await editor.getByLabel("Description", { exact: true }).fill("A thoughtful thank-you for the people behind your year.");
+    await editor.getByLabel("Banner image").selectOption("/catalogue/executive-corporate-hamper.webp");
+    await editor.getByLabel("Image description").fill("A curated executive hamper with a ruby ribbon");
+    await editor.getByLabel("Collection button label").fill("Discover the year-end gifts");
+    await editor.getByLabel("Collection button link").fill("/shop?category=Curated%20hampers");
+    await editor.getByLabel("Enquiry link label").fill("Plan a year-end gift");
+    await editor.getByLabel("Enquiry link destination").fill("/corporate?occasion=Celebrations#enquiry");
+    await editor.getByLabel("Small print").fill("Made personal. From ten gifts.");
+    await editor.getByLabel("Festival shown first").selectOption("event");
+    await editor.getByLabel("Festival to edit").selectOption("additionalEvent");
+    await expect(editor.getByLabel("Event name", { exact: true })).toHaveValue("Navratri");
+    await editor.getByLabel("Heading", { exact: true }).fill("Little gifts.");
+    await editor.getByLabel("Highlighted heading").fill("Bright smiles.");
+    await editor.getByLabel("Festival to edit").selectOption("event");
+    await expect(editor.getByLabel("Heading", { exact: true })).toHaveValue("Celebrate their");
+    await editor.getByLabel("Marquee message").fill("The year-end gifting edit is here");
+    await editor.getByRole("textbox", { name: "Additional message 1", exact: true }).fill("Customised for your team");
+    await editor.getByRole("button", { name: "Remove additional message 2" }).click();
+    await editor.getByRole("button", { name: "Add another message" }).click();
+    await editor.getByRole("textbox", { name: "Additional message 2", exact: true }).fill("From ten thoughtful gifts");
+    await editor.getByRole("button", { name: "Add another message" }).click();
+    await editor.getByRole("textbox", { name: "Additional message 3", exact: true }).fill("Remove this before publishing");
+    await editor.getByRole("button", { name: "Remove additional message 3" }).click();
+    await editor.getByLabel("Marquee link").fill("/#featured-event");
+    await editor.getByRole("button", { name: "Publish homepage" }).click();
+    await expect(editor.getByRole("status")).toContainText("Published.");
+    await expect(page.locator(".announcement").getByRole("link")).toHaveAccessibleName("The year-end gifting edit is here. Customised for your team. From ten thoughtful gifts");
+    await page.reload();
+    await page.getByRole("tab", { name: "homepage" }).click();
+    await expect(editor.getByLabel("Event name", { exact: true })).toHaveValue("Year-end gifting");
+    await expect(editor.getByLabel("Marquee message")).toHaveValue("The year-end gifting edit is here");
+    await expect(editor.getByRole("textbox", { name: "Additional message 1", exact: true })).toHaveValue("Customised for your team");
+    await expect(editor.getByRole("textbox", { name: "Additional message 2", exact: true })).toHaveValue("From ten thoughtful gifts");
+    await expect(editor.getByRole("textbox", { name: "Additional message 3", exact: true })).toHaveCount(0);
+    const stored = await HomepageModel.findById("homepage");
+    assert.equal(stored?.revision, 3);
+    assert.equal(stored?.content?.event?.name, "Year-end gifting");
+    assert.equal(stored?.content?.event?.status, "Current event");
+    assert.equal(stored?.content?.event?.image, "/catalogue/executive-corporate-hamper.webp");
+    assert.equal(stored?.content?.additionalEvent?.title, "Little gifts.");
+    assert.equal(stored?.content?.defaultEvent, "event");
+    assert.deepEqual(Array.from(stored?.content?.marquee?.additionalMessages ?? []), ["Customised for your team", "From ten thoughtful gifts"]);
+    assert.equal(await AuditModel.countDocuments({ action: "homepage.update" }), 3);
+    const visitor = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "no-preference" });
+    const publicPage = await visitor.newPage();
+    await publicPage.goto(base);
+    await expect(publicPage.getByRole("heading", { level: 1 })).toHaveText("Celebrate their brilliant year.");
+    await expect(publicPage.locator(".festival-status")).toHaveText("Current event · Year-end gifting");
+    await expect(publicPage.locator("#featured-event img")).toHaveAttribute("alt", "A curated executive hamper with a ruby ribbon");
+    await expect(publicPage.locator("#featured-event img")).toHaveAttribute("src", /executive-corporate-hamper/);
+    await expect(publicPage.locator(".announcement").getByRole("link")).toHaveAccessibleName("The year-end gifting edit is here. Customised for your team. From ten thoughtful gifts");
+    await publicPage.getByRole("button", { name: "Navratri", exact: true }).click();
+    await expect(publicPage.getByRole("heading", { level: 1 })).toHaveText("Little gifts. Bright smiles.");
+    await publicPage.getByRole("button", { name: "Year-end gifting", exact: true }).click();
+    assert.equal(await publicPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await publicPage.getByRole("link", { name: "Discover the year-end gifts" }).click();
+    await expect(publicPage).toHaveURL(/\/shop\?category=Curated%20hampers/);
+    await publicPage.goto(base);
+    await publicPage.getByRole("link", { name: "Plan a year-end gift" }).click();
+    await expect(publicPage.getByLabel("The occasion", { exact: true })).toHaveValue("Celebrations");
+    await page.setViewportSize({ width: 390, height: 844 });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    assert.deepEqual((await new AxeBuilder({ page }).include(".homepage-editor").withTags(["wcag2a", "wcag2aa"]).analyze()).violations, []);
+    await editor.getByLabel("Show featured event").uncheck();
+    await editor.getByRole("button", { name: "Publish homepage" }).click();
+    await expect(editor.getByRole("status")).toContainText("Published.");
+    await publicPage.goto(base);
+    await expect(publicPage.getByRole("heading", { level: 1 })).toHaveText("Little gifts. Bright smiles.");
+    await expect(publicPage.getByRole("group", { name: "Choose a featured festival" })).toHaveCount(0);
+    await editor.getByLabel("Festival to edit").selectOption("additionalEvent");
+    await editor.getByLabel("Show featured event").uncheck();
+    await editor.getByRole("button", { name: "Publish homepage" }).click();
+    await expect(editor.getByRole("alert")).toContainText("featured event is hidden");
+    await editor.getByLabel("Marquee link").fill("/shop");
+    await editor.getByRole("button", { name: "Publish homepage" }).click();
+    await expect(editor.getByRole("status")).toContainText("Published.");
+    await publicPage.goto(base);
+    await expect(publicPage.locator("#featured-event")).toHaveCount(0);
+    await expect(publicPage.getByRole("heading", { level: 1 })).toHaveText("Thoughtfully chosen. Beautifully given.");
+    await expect(publicPage.locator(".announcement").getByRole("link")).toHaveAttribute("href", "/shop");
+    await editor.getByLabel("Show scrolling marquee").uncheck();
+    await editor.getByRole("button", { name: "Publish homepage" }).click();
+    await expect(editor.getByRole("status")).toContainText("Published.");
+    await publicPage.reload();
+    await expect(publicPage.locator(".announcement")).toHaveCount(0);
+    const latest = await request("/api/admin/homepage", undefined, adminCookie, "GET");
+    const snapshot: HomepageSettings = await latest.json();
+    const response = await request("/api/admin/homepage", { revision: snapshot.revision, content: defaultHomepageContent }, adminCookie, "PUT");
+    assert.equal(response.status, 200);
+    await editor.getByLabel("Show featured event").check();
+    await editor.getByRole("button", { name: "Publish homepage" }).click();
+    await expect(editor.getByRole("alert")).toContainText("changed by another administrator");
+    await expect(editor.getByRole("status")).toHaveCount(0);
+    await publicPage.reload();
+    await expect(publicPage.getByRole("heading", { level: 1 })).toHaveText("Small gifts. Big blessings.");
+    await expect(publicPage.locator(".announcement").getByRole("link")).toHaveAccessibleName([defaultHomepageContent.marquee.message, ...defaultMarqueeMessages].join(". "));
+    const { revision }: HomepageSettings = await response.json();
+    const longCopy = {
+      ...defaultHomepageContent,
+      defaultEvent: "event",
+      event: { ...defaultHomepageContent.event, title: "W".repeat(60), accent: "W".repeat(40), description: "W".repeat(280), primaryLabel: "W".repeat(45), secondaryLabel: "W".repeat(45) },
+      additionalEvent: { ...defaultHomepageContent.additionalEvent, name: "W".repeat(50) },
+      marquee: { ...defaultHomepageContent.marquee, message: "W".repeat(140), additionalMessages: [] },
+    };
+    const longSaved = await request("/api/admin/homepage", { revision, content: longCopy }, adminCookie, "PUT");
+    assert.equal(longSaved.status, 200);
+    const next: HomepageSettings = await longSaved.json();
+    await publicPage.setViewportSize({ width: 320, height: 800 });
+    await publicPage.reload();
+    await publicPage.locator(".festival-details summary").click();
+    assert.equal(await publicPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await publicPage.emulateMedia({ reducedMotion: "reduce" });
+    await expect(publicPage.locator(".announcement-static")).toBeVisible();
+    assert.equal(await publicPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    for (const link of await publicPage.locator(".festival-actions a").all()) {
+      assert.equal(await link.evaluate((element) => element.scrollWidth <= element.clientWidth), true, "Custom button labels must remain readable rather than clipped.");
+    }
+    assert.equal((await request("/api/admin/homepage", { revision: next.revision, content: defaultHomepageContent }, adminCookie, "PUT")).status, 200);
+  } finally { await browser.close(); }
+});
+
+test("analytics aggregates finite daily counts, rejects extra data and protects reports", async () => {
+  await InteractionModel.deleteMany({});
+  const body = { event: "category_click", target: "wellness" } as const;
+  for (const response of await Promise.all(Array.from({ length: 12 }, () => request("/api/analytics", body, "")))) assert.equal(response.status, 204);
+  const record = await InteractionModel.findOne({ event: body.event, target: body.target }).lean();
+  assert.ok(record);
+  assert.equal(record.count, 12);
+  assert.deepEqual(Object.keys(record).sort(), ["_id", "count", "day", "event", "expiresAt", "target"]);
+  assert.ok(record.expiresAt.getTime() > Date.now() + 89 * 86400000);
+  assert.ok(record.expiresAt.getTime() <= Date.now() + 90 * 86400000);
+  assert.equal((await request("/api/analytics", { ...body, email: "private@example.com" }, "")).status, 400);
+  assert.equal((await request("/api/analytics", { event: "category_click", target: "/private?email=private" }, "")).status, 400);
+  assert.equal((await fetch(`${base}/api/analytics`, { method: "POST", headers: { Origin: "https://foreign.example", "Content-Type": "application/json" }, body: JSON.stringify(body) })).status, 403);
+  for (const header of ["dnt", "sec-gpc"]) {
+    assert.equal((await fetch(`${base}/api/analytics`, { method: "POST", headers: { Origin: base, "Content-Type": "application/json", [header]: "1" }, body: JSON.stringify(body) })).status, 204);
+  }
+  assert.equal((await InteractionModel.findById(record._id))?.count, 12);
+  assert.equal((await request("/api/admin/analytics", undefined, "", "GET")).status, 401);
+  assert.equal((await request("/api/admin/analytics", undefined, cookie, "GET")).status, 403);
+  const response = await request("/api/admin/analytics", undefined, adminCookie, "GET");
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("cache-control"), "no-store");
+  const report = await response.json();
+  assert.equal(report.enabled, true);
+  assert.equal(report.submittedEnquiries, await QuoteModel.countDocuments());
+  assert.deepEqual(report.interactions, [{ ...body, count: 12 }]);
+  assert.equal(JSON.stringify(report).includes("buyer@example.com"), false);
+});
+
+test("live browser analytics sends only enumerated interactions and honours privacy preferences", { timeout: 90000 }, async () => {
+  const browser = await chromium.launch();
+  try {
+    const page = await browser.newPage();
+    const sent: object[] = [];
+    page.on("request", (request) => { if (request.url().endsWith("/api/analytics")) sent.push(request.postDataJSON()); });
+    const view = page.waitForResponse((response) => response.url().endsWith("/api/analytics") && response.request().postDataJSON().event === "catalogue_view");
+    await page.goto(`${base}/catalogue?email=private-query@example.com`);
+    assert.equal((await view).status(), 204);
+    assert.deepEqual(sent, [{ event: "catalogue_view", target: "hub" }]);
+    const download = page.waitForResponse((response) => response.url().endsWith("/api/analytics") && response.request().postDataJSON().event === "catalogue_download");
+    await page.locator(".catalogue-edition").first().getByRole("link", { name: "Download PDF" }).click();
+    assert.equal((await download).status(), 204);
+    assert.equal(JSON.stringify(sent).includes("private-query"), false);
+    for (const preference of ["doNotTrack", "globalPrivacyControl"]) {
+      const context = await browser.newContext();
+      await context.addInitScript(({ preference }) => { Object.defineProperty(navigator, preference, { value: preference === "doNotTrack" ? "1" : true }); }, { preference });
+      const privatePage = await context.newPage();
+      let writes = 0;
+      privatePage.on("request", (request) => { if (request.url().endsWith("/api/analytics")) writes++; });
+      await privatePage.goto(`${base}/catalogue`);
+      assert.equal(await privatePage.evaluate((key) => Reflect.get(navigator, key), preference), preference === "doNotTrack" ? "1" : true);
+      await privatePage.getByRole("button", { name: "Search gifts", exact: true }).click();
+      await expect(privatePage.getByRole("dialog")).toBeVisible();
+      await privatePage.waitForTimeout(200);
+      assert.equal(writes, 0, `${preference} must suppress client telemetry`);
+      await context.close();
+    }
+  } finally { await browser.close(); }
 });
 
 test("logout revokes the session", async () => {

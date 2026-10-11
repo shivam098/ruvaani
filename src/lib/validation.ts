@@ -1,14 +1,18 @@
 import { z } from "zod";
-import { catalogueProducts, occasions, recipients } from "./catalog-data";
+import { catalogueProducts, MINIMUM_QUOTE_BUDGET, occasions, recipients } from "./catalog-data";
+import { findCollection } from "./discovery";
 
 export const quotePrefillSchema = z.object({
   product: z.string().refine((id) => catalogueProducts.some((product) => product.id === id), "That catalogue selection is no longer available.").optional(),
   quantity: z.coerce.number().int().min(10).max(100000).optional(),
-  budget: z.coerce.number().int().min(299).max(1000000).optional(),
+  budget: z.coerce.number().int().min(MINIMUM_QUOTE_BUDGET).max(1000000).optional(),
   occasion: z.string().refine((value) => occasions.includes(value)).optional(),
   recipient: z.string().refine((value) => recipients.includes(value)).optional(),
+  collection: z.string().refine((value) => Boolean(findCollection(value)), "That collection is not available.").optional(),
 });
 export type QuotePrefill = z.infer<typeof quotePrefillSchema>;
+export const quoteContextSchema = quotePrefillSchema.pick({ collection: true, occasion: true, recipient: true });
+export type QuoteContext = z.infer<typeof quoteContextSchema>;
 
 export const cartLineSchema = z.object({
   productId: z.string().regex(/^rv-\d{3}$/),
@@ -49,7 +53,7 @@ export const quoteSchema = z.object({
   phone: z.string().regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit Indian mobile number."),
   occasion: z.string().trim().min(2).max(60),
   quantity: z.number().int().min(10).max(100000),
-  budget: z.number().int().min(299).max(1000000),
+  budget: z.number().int().min(MINIMUM_QUOTE_BUDGET).max(1000000),
   productId: z.string().refine((id) => id === "" || catalogueProducts.some((product) => product.id === id), "Choose a valid catalogue item.").default(""),
   deliveryDate: z.iso.date().refine((v) => v >= new Date().toISOString().slice(0, 10), "Choose a future delivery date."),
   locations: z.string().trim().min(2).max(500),

@@ -3,8 +3,10 @@
 **Gifts that create lasting moments.**
 
 A responsive, quote-first gifting catalogue with the supplied RUVAANI logo,
-cream/emerald/gold/ruby palette, and a minimal editorial hero using supplied
-hamper imagery.
+baby-pink base, green lettering, burgundy/gold accents and a light-peach marquee.
+A single full-width seasonal hero uses supplied hamper imagery, followed by
+unified discovery, a matching featured edit, catalogues, the RUVAANI promise
+and a short brand story. The approved blush palette is retained throughout.
 
 **Visual previews:** [Desktop homepage](docs/home-desktop.png) · [Mobile homepage](docs/home-mobile.png).
 
@@ -25,13 +27,20 @@ hamper imagery.
   - **Single Premium Box:** ₹1,299.
   - **Corporate Hamper:** ₹1,599.
   - **Executive Corporate Hamper:** ₹2,199.
+- Two owner-supplied Navratri Kanya / Kanjak posters:
+  - **Cone Hamper:** starting at ₹99.
+  - **Kanya / Kanjak Hamper:** starting at ₹149.
 - Package contents and prices are transcribed from the sheets. Full sheets are
-  available on those product pages. Prices are catalogue references, not final
+  available on all five product pages. Navratri prices are explicitly labelled
+  **From**, not presented as fixed prices. Other prices are catalogue references, not final
   checkout prices; tax, branding, availability and delivery require confirmation.
 - The remaining 16 entries have **no invented prices, stock, weights or capacities**.
   Presentation options are not represented as automatically included products.
 - This is a partial catalogue, not a claim that the full range has been supplied.
-- Brand imagery is cropped from the supplied logo. Product images are cropped
+- The horizontal logo uses the supplied RV monogram on the left, the corrected
+  **RUVAANI** wordmark (two A's) from the updated reference on the right, and
+  **Creations & Packaging** beneath the name in the header and footer.
+  Product images are cropped
   from the supplied PDF/sheets and optimized as local WebP files; no third-party
   image-generation or document-processing service is used.
 - All three owner-approved contact numbers are shown as telephone links.
@@ -40,8 +49,10 @@ hamper imagery.
 
 `src/lib/catalog-data.ts` is the public catalogue's source of truth in **both**
 deployment modes. `CatalogueItem` intentionally has no checkout price or stock
-fields. Its optional `cataloguePrice` uses integer **paise**. Source attribution
-is retained per entry.
+fields. Its optional `cataloguePrice` uses integer **paise**; `priceType: "starting"`
+distinguishes the two Navratri offers from fixed catalogue reference prices.
+Source attribution is retained per entry. The minimum indicative enquiry budget
+is ₹99 per gift, with the existing 10-gift minimum unchanged.
 
 The catalogue is read-only in the operations UI; changes are made in source,
 reviewed and deployed. The old database product collection does not override it.
@@ -75,22 +86,131 @@ GitHub account when setting up another machine.
 
 No database, Razorpay account or API key is needed to browse the catalogue.
 
+The homepage order is **scrolling marquee → logo/navigation → featured event →
+unified discovery → matching featured gifts → catalogue → promise → story → footer**.
+The festival switcher opens with Navratri,
+with Diwali one tap away. It does not auto-rotate, and displays only one event
+heading and image at a time. Both events use the existing blush/green palette.
+The marquee repeats three distinct messages automatically, with no Play/Pause
+buttons. Keyboard focus pauses it for reading; hover does not stop it. A compact
+dismiss button hides the strip until a full reload, including during in-app
+navigation, and returns focus to the home logo. Dismissal is not saved to browser
+storage. Reduced-motion visitors see every message as static text.
+The full-width pink/peach event backdrop has original botanical line details and
+a wider image layout, instead of leaving bare gutters around a dark-green card.
+The event uses supplied catalogue photography, not third-party promotional art.
+The newer Diwali poster is a palette reference, not a replacement price list.
+
+The storefront uses a 16px body/form scale, readable secondary copy and at least
+44px key touch targets. On small phones, gift cards stack rather than compress
+their descriptions or actions. Save/Saved buttons provide a visible wishlist state;
+Request a quote remains the primary action, not an Add to cart checkout.
+One discovery grid switches between category, occasion and festival, with exactly
+two category columns on narrow phones. Occasion cards promote existing gifting. They do
+not advertise invented discounts, coupon codes, limited-stock or expiry claims.
+Event descriptions, full gift descriptions, the five-step enquiry process and
+policy details remain available through expandable sections. Policy pages show
+plain-language summaries but retain their original details and explicit
+unfinished-policy warnings; this presentation is not finalized legal policy.
+
+### Change the featured event and marquee
+
+In database mode, sign in as an administrator and open **`/admin` → Homepage**.
+Choose **Festival to edit** to select either event, and **Festival shown first**
+to choose the initial view. Edit the event name, current/upcoming label, headings, description, photograph,
+image description, action labels/destinations, small print and marquee text/link.
+Add, edit or remove up to four additional marquee messages (five total); all
+messages share the configured marquee link. Previously saved single-message
+settings keep their original message/link and gain the two new default messages
+until edited. An explicitly saved empty additional-message list is respected.
+Choose a photograph from the supplied catalogue library; arbitrary image URLs
+and uploads are not supported. Each event and the marquee have independent
+visibility controls. Hidden festivals are skipped; the remaining visible event
+has no unnecessary switcher. Select **Publish homepage** to save both events,
+the initial selection and marquee together in MongoDB without redeploying.
+Reload the public homepage to see the saved content. Existing visitors can refresh
+to receive updates; the site does not push changes into already-open pages.
+
+The stable `/#featured-event` anchor follows whichever event is selected. If the
+two events are both hidden, give the marquee another destination (such as `/shop`) or hide
+it too. Links must stay on this website. For occasions not already in the enquiry
+form, use `/corporate?occasion=Celebrations#enquiry` rather than an unsupported
+occasion value.
+
+This is a manually chosen seasonal feature, not an automatic holiday calendar,
+countdown or delivery promise. No event dates or deadlines are inferred.
+Authenticated, same-origin saves are validated and audited in one transaction;
+a stale editor cannot overwrite another administrator's update.
+Live requests read the persisted settings without a cross-request content cache.
+Database errors are surfaced rather than silently replacing published content.
+Defaults in `src/lib/homepage-content.ts` apply before the first save and in demo
+mode. Legacy saved settings retain their original event and marquee while gaining
+the additional Navratri event and Navratri-first selection when these fields are
+absent. Existing saved fields are never overwritten by a read, and an explicitly
+hidden event remains hidden. Demo mode shows a clearly read-only editor; enabling
+publishing requires the MongoDB and administrator setup below.
+
 | Journey | Current behavior |
 |---|---|
-| Homepage and collection | 19 sourced catalogue entries, search, categories, alphabetical sort and pagination |
-| Product details / quick look | Supplied imagery, package contents where provided, prices on request or labelled catalogue references |
-| Request a quote | Selected item and validated quantity carry into the enquiry; 10-unit minimum |
+| Homepage and collection | 21 sourced entries; Navratri/Diwali switcher; unified discovery; category, occasion, festival, price and recipient filtering |
+| `/collections`, `/occasions`, `/festivals` | Directories and reusable source-scoped landing pages with customisation, catalogues and enquiry |
+| `/catalogue` | Seven browsable editions with real downloadable, text-searchable branded PDFs |
+| Product details / quick look | Supplied imagery, package contents where provided, prices on request, labelled reference prices or advertised starting prices |
+| Request a quote | Selected item, supported product occasion and validated quantity carry into the enquiry; budgets from ₹99 and 10-unit minimum |
 | Wishlist | Browser-local item IDs under `ruvaani-wishlist-v1`; no names or addresses |
 | Gift finder | Recipient, occasion and indicative budget carry into the brief; no unverified budget/stock matching |
 | Contact | All three supplied telephone numbers; optional configured WhatsApp |
 | Enquiry in demo mode | Explicit non-submitting preview with telephone alternatives |
 | Enquiry in database mode | Validated, rate-limited persistence with consent, reference number and server-resolved item name |
-| Operations | Read-only public catalogue; authenticated enquiry and existing-order operations |
+| Operations | Read-only catalogue; authenticated enquiry/order operations, editable homepage and opt-in aggregate insights |
 | Old `/cart` and `/checkout` links | Redirect to the enquiry form |
 | Direct `POST /api/checkout` | HTTP 410; no order, provider request or stock reservation |
 
 Old demo bag data is left untouched but is not reused as catalogue selections.
 Original retail IDs and new `rc-*` catalogue IDs never alias one another.
+
+### Discovery, seasonal edits and PDFs
+
+`src/lib/discovery.ts` defines eight categories, seven occasion/recipient edits,
+seven festival edits and seven catalogue editions. These reference the same
+source product IDs, not new inventory. **Wellness** and **Tech & Utility** remain
+explicitly enquiry-only until actual standalone products are supplied. Later
+festival edits are editorial selections, not promises of festival packaging,
+stock or new accessories; no rakhi is implicitly included.
+
+Category, occasion and festival filters intersect with each other and the page's
+source selection. Numeric price ranges use only advertised starting or reference
+prices. Unpriced items are included under **All prices** or **Price on request**,
+not assumed to cost zero. Resetting filters never escapes the current collection.
+Collection and recipient context carries into the editable enquiry requirements.
+Existing `/shop?category=...` and product-specific quote links remain supported.
+
+Desktop navigation offers disclosure menus, catalogue and enquiry actions;
+search is secondary. Mobile adds a safe-area-aware Catalogue/Enquiry bar, hidden
+on the enquiry, account, admin and printable pages. No WhatsApp number is inferred.
+
+Committed PDFs in `public/catalogues` are the complete collection, Navratri,
+Diwali 2026, corporate, wedding, festive and the three signature hampers.
+Their printable source pages are `/catalogue/print/<edition>` and are noindex.
+They include the supplied photographs, named contents, starting/reference-price
+qualifications, MOQ and all three contact numbers. They are not quotations.
+
+After changing products, edition membership or print layout, regenerate PDFs
+before committing. This is a **local authoring step**, not a Vercel dependency:
+
+```powershell
+# Python with PyMuPDF 1.28.2 and Playwright Chromium are needed for this step.
+python -m pip install pymupdf==1.28.2
+npx playwright install chromium
+npm run build
+npm run catalogues:generate
+```
+
+The generator owns an isolated demo production server on port 3102, waits for
+fonts/images, rejects vertically clipped pages, compresses photographs locally
+and stops its own server afterward. Keep port 3102 free. Review the output pages
+and commit all seven PDFs; Vercel serves them as static downloads. No Python,
+Chromium or document-generation account is required on Vercel.
 
 ## Enable database-backed enquiries and accounts
 
@@ -131,6 +251,32 @@ silently promote an existing user. Sign in at `/account`, then open `/admin`.
 Enquiries show the selected item, requested quantity and budget, contact
 information and requirements. Status changes are authenticated and audited.
 
+### Optional first-party insights
+
+Recording is off by default. After configuring live database mode and creating
+indexes, set `ANALYTICS_ENABLED=true` and redeploy. **`/admin` → Insights** shows
+the last 30 calendar days including today (UTC), plus saved-enquiry counts drawn
+directly from enquiry records. `/api/admin/analytics` is administrator-only.
+
+Recording accepts only enumerated category/occasion/festival clicks, catalogue
+views/download clicks and enquiry-link clicks. Each MongoDB record contains a
+server day, event, finite destination, count and expiry; no form values, full
+URLs, visitor identifiers or analytics cookies. Daily records expire after 90
+days via a TTL index (physical deletion is asynchronous). The existing abuse
+limiter uses temporary hashed request-source buckets separately. Hosting request
+logs are separate and remain subject to the hosting provider's configuration.
+
+Demo mode never sends or records telemetry, even if the analytics flag is true.
+Do Not Track and Global Privacy Control signals suppress client recording and
+are also honoured by the endpoint. Origin, body-size, schema and rate-limit
+checks apply. Failed telemetry is logged diagnostically without preventing
+navigation or enquiry submission.
+
+Counts are interactions, not unique visitors, attributed conversions or sales.
+Download counts reflect a click, not proof of a completed transfer. Blockers,
+privacy settings and network failures affect totals. No advertising or external
+analytics service is installed. The owner must still finalise the privacy policy.
+
 ## Vercel deployment
 
 1. In Vercel's dashboard, import the private `shivam098/ruvaani` repository.
@@ -156,6 +302,7 @@ a successful push alone does not verify a Vercel deployment.
 | `DEMO_MODE` | Only the exact string `false` enables database-backed operations |
 | `NEXT_PUBLIC_SITE_URL` | Actual site origin for metadata and origin checks |
 | `MONGODB_URI`, `MONGODB_DB` | Server-only database configuration |
+| `ANALYTICS_ENABLED` | Only `true` enables first-party aggregate recording, and only in live mode |
 | `NEXT_PUBLIC_WHATSAPP_NUMBER` | Optional verified destination, digits with country code |
 | `ADMIN_EMAIL`, `ADMIN_NAME`, `ADMIN_PASSWORD` | Local administrator provisioning only |
 | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` | Retained only for existing test-order reconciliation; not needed for the catalogue |
@@ -186,15 +333,18 @@ npm run test:e2e
 ```
 
 - Unit tests cover catalogue sources/assets, exact provided package prices,
-  quote-prefill boundaries and preserved legacy commerce helpers.
+  quote-prefill boundaries, discovery intersections/price boundaries, analytics
+  allowlists and preserved legacy commerce helpers.
 - Backend tests use an isolated temporary MongoDB replica set and a Next.js server on port 3101
   and an explicit test-process-only Razorpay double. They cover live enquiries,
-  checkout rejection without side effects and existing-order continuity.
+  checkout rejection without side effects, existing-order continuity, saved
+  homepage settings and aggregate analytics/privacy/authentication.
   The test server uses `.next-integration` so an existing local development server
   does not need to be stopped.
 - Browser tests use a production server on port 3100 after a build and cover
   desktop/mobile layouts, logos/images, catalogue actions, quote prefills,
-  demo non-submission, contacts and accessibility.
+  demo non-submission, contacts, keyboard menus, new collection journeys,
+  actual PDF downloads, mobile conversion actions and accessibility.
 - Tests never use a real Atlas database or charge a payment.
 
 ## Remaining work

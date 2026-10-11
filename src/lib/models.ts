@@ -1,4 +1,5 @@
 import mongoose, { Schema, type InferSchemaType, type Model } from "mongoose";
+import { interactionEvents } from "./interaction-data";
 
 const productSchema = new Schema({
   id: { type: String, required: true, unique: true },
@@ -83,6 +84,48 @@ const auditSchema = new Schema({
   target: { type: String, required: true },
 }, { timestamps: true });
 
+const interactionModelSchema = new Schema({
+  _id: { type: String, required: true },
+  day: { type: String, required: true, index: true },
+  event: { type: String, enum: interactionEvents, required: true },
+  target: { type: String, required: true },
+  count: { type: Number, required: true, min: 0 },
+  expiresAt: { type: Date, required: true, index: { expires: 0 } },
+}, { versionKey: false });
+
+const homepageEventFields = {
+  enabled: { type: Boolean, required: true },
+  name: { type: String, required: true },
+  status: { type: String, enum: ["Current event", "Upcoming event"], required: true },
+  eyebrow: { type: String, required: true },
+  title: { type: String, required: true },
+  accent: { type: String, required: true },
+  description: { type: String, required: true },
+  image: { type: String, required: true },
+  imageAlt: { type: String, required: true },
+  primaryLabel: { type: String, required: true },
+  primaryHref: { type: String, required: true },
+  secondaryLabel: { type: String, required: true },
+  secondaryHref: { type: String, required: true },
+  note: { type: String, required: true },
+};
+
+const homepageSchema = new Schema({
+  _id: { type: String, required: true },
+  revision: { type: Number, required: true, min: 1 },
+  content: {
+    event: homepageEventFields,
+    additionalEvent: { type: new Schema(homepageEventFields, { _id: false }), default: undefined },
+    defaultEvent: { type: String, enum: ["event", "additionalEvent"], default: undefined },
+    marquee: {
+      enabled: { type: Boolean, required: true },
+      message: { type: String, required: true },
+      additionalMessages: { type: [String], default: undefined },
+      href: { type: String, required: true },
+    },
+  },
+}, { timestamps: true });
+
 function model<S extends Schema>(name: string, schema: S): Model<InferSchemaType<S>> {
   return (mongoose.models[name] as Model<InferSchemaType<S>> | undefined) || mongoose.model<InferSchemaType<S>>(name, schema);
 }
@@ -94,4 +137,6 @@ export const OrderModel = model("Order", orderSchema);
 export const QuoteModel = model("Quote", quoteSchema);
 export const RateModel = model("RateLimit", rateSchema);
 export const AuditModel = model("AuditLog", auditSchema);
+export const HomepageModel = model("Homepage", homepageSchema);
+export const InteractionModel = model("Interaction", interactionModelSchema);
 export type StoredOrder = InferSchemaType<typeof orderSchema>;
