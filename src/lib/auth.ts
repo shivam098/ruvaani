@@ -23,7 +23,14 @@ export async function currentUser(): Promise<UserView | null> {
 export async function requireUser(admin = false) {
   const user = await currentUser();
   if (!user) throw new HttpError(401, "Please sign in to continue.");
-  if (admin && user.role !== "ADMIN") throw new HttpError(403, "Administrator access is required.");
+  if (admin && user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") throw new HttpError(403, "Administrator access is required.");
+  return user;
+}
+
+export async function requireRole(allowedRoles: ("CUSTOMER" | "CORPORATE" | "MERCHANT" | "ADMIN" | "SUPER_ADMIN")[]) {
+  const user = await currentUser();
+  if (!user) throw new HttpError(401, "Please sign in to continue.");
+  if (!allowedRoles.includes(user.role)) throw new HttpError(403, "You do not have permission to access this resource.");
   return user;
 }
 

@@ -15,7 +15,7 @@ export default async function AdminPage() {
   if (isDemoMode()) return <Admin demo products={catalogueProducts} orders={[]} quotes={[]} homepage={homepage} />;
   const user = await currentUser();
   if (!user) redirect("/account");
-  if (user.role !== "ADMIN") redirect("/account");
+  if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") redirect("/account");
   await connectDb();
   const [orders, quotes, analytics] = await Promise.all([
     OrderModel.find().sort({ createdAt: -1 }).limit(100).lean(),
