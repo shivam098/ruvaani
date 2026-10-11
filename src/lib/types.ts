@@ -30,11 +30,15 @@ export interface CartLine {
   message: string;
 }
 
+export type UserRole = "CUSTOMER" | "CORPORATE" | "MERCHANT" | "ADMIN" | "SUPER_ADMIN";
+
 export interface UserView {
   id: string;
   name: string;
   email: string;
-  role: "CUSTOMER" | "ADMIN";
+  role: UserRole;
+  phone?: string;
+  status?: string;
 }
 
 export interface Address {
@@ -47,6 +51,38 @@ export interface Address {
   pincode: string;
 }
 
+export type QuoteStatus =
+  | "DRAFT"
+  | "SUBMITTED"
+  | "UNDER_REVIEW"
+  | "QUOTE_SENT"
+  | "NEGOTIATION"
+  | "APPROVED"
+  | "REJECTED"
+  | "EXPIRED"
+  | "CONVERTED_TO_ORDER";
+
+export type OrderStatus =
+  | "AWAITING_PAYMENT"
+  | "CONFIRMED"
+  | "PROCESSING"
+  | "PACKED"
+  | "READY_TO_SHIP"
+  | "SHIPPED"
+  | "OUT_FOR_DELIVERY"
+  | "DELIVERED"
+  | "CANCELLED"
+  | "REFUNDED";
+
+export type PaymentStatus =
+  | "CREATED"
+  | "PAYMENT_PENDING"
+  | "PAID"
+  | "FAILED"
+  | "CANCELLED"
+  | "REFUND_PENDING"
+  | "REFUNDED";
+
 export interface OrderView {
   id: string;
   number: string;
@@ -55,4 +91,28 @@ export interface OrderView {
   paymentStatus: string;
   status: string;
   items: { productId: string; name: string; quantity: number; unitPrice: number; personalization: { name: string; message: string } }[];
+  trackingNumber?: string;
+  carrier?: string;
+}
+
+export interface RecipientItem {
+  id?: string;
+  name: string;
+  mobile: string;
+  email: string;
+  address: string;
+  city: string;
+  state?: string;
+  pincode: string;
+  gift?: string;
+  status?: string;
+}
+
+export interface CouponView {
+  code: string;
+  discountType: "PERCENTAGE" | "FIXED";
+  discountValue: number;
+  minOrderValue: number;
+  maxDiscount?: number;
+  active: boolean;
 }
