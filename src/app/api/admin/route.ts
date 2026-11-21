@@ -11,15 +11,18 @@ import {
   UserModel,
   CorporateAccountModel,
   MerchantModel,
+  SupportTicketModel,
 } from "@/lib/models";
 import type { ClientSession } from "mongoose";
 
 export const runtime = "nodejs";
 
 const schema = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("product"), id: z.string().regex(/^rv-\d{3}$/), stock: z.number().int().min(0).max(100000), active: z.boolean() }).strict(),
-  z.object({ kind: z.literal("quote"), id: z.string().regex(/^[a-f0-9]{24}$/), status: z.enum(["SUBMITTED", "UNDER_REVIEW", "CONTACTED", "CLOSED"]) }).strict(),
+  z.object({ kind: z.literal("product"), id: z.string().regex(/^[a-zA-Z0-9_-]+$/), stock: z.number().int().min(0).max(100000), active: z.boolean() }).strict(),
+  z.object({ kind: z.literal("quote"), id: z.string().regex(/^[a-f0-9]{24}$/), status: z.enum(["SUBMITTED", "UNDER_REVIEW", "QUOTE_SENT", "NEGOTIATION", "APPROVED", "REJECTED", "CONTACTED", "CLOSED"]) }).strict(),
   z.object({ kind: z.literal("order"), id: z.string().regex(/^[a-f0-9]{24}$/), status: z.enum(["PROCESSING", "SHIPPED", "DELIVERED"]) }).strict(),
+  z.object({ kind: z.literal("ticket"), id: z.string().regex(/^[a-f0-9]{24}$/), status: z.enum(["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"]) }).strict(),
+  z.object({ kind: z.literal("corporate"), id: z.string().regex(/^[a-f0-9]{24}$/), status: z.enum(["PENDING", "APPROVED", "REJECTED"]) }).strict(),
 ]);
 
 export async function GET() {
@@ -28,13 +31,14 @@ export async function GET() {
     await requireUser(true);
     await connectDb();
 
-    const [userCount, orderCount, quoteCount, productCount, corporateCount, merchantCount] = await Promise.all([
+    const [userCount, orderCount, quoteCount, productCount, corporateCount, merchantCount, ticketCount] = await Promise.all([
       UserModel.countDocuments(),
       OrderModel.countDocuments(),
       QuoteModel.countDocuments(),
       ProductModel.countDocuments(),
       CorporateAccountModel.countDocuments(),
       MerchantModel.countDocuments(),
+      SupportTicketModel.countDocuments(),
     ]);
 
     return NextResponse.json({
@@ -45,6 +49,7 @@ export async function GET() {
         products: productCount,
         corporateAccounts: corporateCount,
         merchants: merchantCount,
+        supportTickets: ticketCount,
       },
     });
   } catch (error) {
@@ -67,6 +72,10 @@ export async function PATCH(request: Request) {
         result = await ProductModel.updateOne({ id: data.id }, { $set: { stock: data.stock, active: data.active } }, opts);
       } else if (data.kind === "quote") {
         result = await QuoteModel.updateOne({ _id: data.id }, { $set: { status: data.status } }, opts);
+      } else if (data.kind === "ticket") {
+        result = await SupportTicketModel.updateOne({ _id: data.id }, { $set: { status: data.status } }, opts);
+      } else if (data.kind === "corporate") {
+        result = await CorporateAccountModel.updateOne({ _id: data.id }, { $set: { status: data.status } }, opts);
       } else {
         const previous = ({ PROCESSING: "CONFIRMED", SHIPPED: "PROCESSING", DELIVERED: "SHIPPED" } as const)[data.status];
         result = await OrderModel.updateOne({ _id: data.id, paymentStatus: "PAID", status: previous }, { $set: { status: data.status } }, opts);

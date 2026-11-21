@@ -12,6 +12,7 @@
     "test:backend": "tsx --test --test-concurrency=1 tests/integration/*.test.ts",
     "test:e2e": "playwright test",
     "catalogues:generate": "tsx scripts/generate-catalogues.ts",
+    "db:local": "tsx scripts/local-mongo.ts",
     "db:seed": "tsx --env-file=.env.local scripts/seed.ts",
     "admin:create": "tsx --env-file=.env.local scripts/create-admin.ts"
   },

@@ -12,9 +12,17 @@ import {
 } from "../src/lib/models";
 import { demoProducts } from "./fixtures/products";
 
+import { MongoMemoryServer } from "mongodb-memory-server";
+
+let mongod: MongoMemoryServer | null = null;
+
 before(async () => {
-  // Ensure connection to local MongoDB
-  process.env.MONGODB_URI = "mongodb://127.0.0.1:27017";
+  try {
+    mongod = await MongoMemoryServer.create();
+    process.env.MONGODB_URI = mongod.getUri();
+  } catch {
+    process.env.MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017";
+  }
   process.env.MONGODB_DB = "ruvaani";
   await connectDb();
 
@@ -27,6 +35,9 @@ after(async () => {
   if (process.env.MONGODB_URI) {
     const db = await connectDb();
     await db.disconnect();
+  }
+  if (mongod) {
+    await mongod.stop();
   }
 });
 

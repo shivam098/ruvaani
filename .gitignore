@@ -45,3 +45,4 @@ next-env.d.ts
 # browser reports and local database downloads
 /playwright-report/
 /test-results/
+/.mongodb_data/

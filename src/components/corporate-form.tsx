@@ -11,13 +11,13 @@ import { apiRequest } from "@/lib/client-api";
 import { useStore } from "./store-provider";
 
 export function CorporateForm({ initial = {}, warning = "" }: { initial?: QuotePrefill; warning?: string }) {
-  const { demo } = useStore();
+  const { demo, products } = useStore();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [reference, setReference] = useState("");
   const [quantity, setQuantity] = useState(initial.quantity ?? 10);
   const [productId, setProductId] = useState(initial.product ?? "");
-  const [budget, setBudget] = useState(initial.budget ?? (catalogueProducts.find((product) => product.id === initial.product)?.cataloguePrice ?? 149900) / 100);
+  const [budget, setBudget] = useState(initial.budget ?? (products.find((product) => product.id === initial.product)?.cataloguePrice ?? 149900) / 100);
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError("");
     const form = new FormData(event.currentTarget);
@@ -28,18 +28,26 @@ export function CorporateForm({ initial = {}, warning = "" }: { initial?: QuoteP
       requirements: form.get("requirements"), consent: form.get("consent") === "on",
     });
     if (!data.success) { setError(data.error.issues[0].message); return; }
-    if (demo) { setReference("DEMO"); return; }
     setBusy(true);
-    try { const result = await apiRequest<{ reference: string }>("/api/quotes", data.data); setReference(result.reference); }
-    catch (e) { setError(e instanceof Error ? e.message : "We could not save your enquiry. Please try again."); }
-    finally { setBusy(false); }
+    try {
+      const result = await apiRequest<{ reference: string }>("/api/quotes", data.data);
+      setReference(result.reference);
+    } catch (e) {
+      if (demo) {
+        setReference("DEMO");
+      } else {
+        setError(e instanceof Error ? e.message : "We could not save your enquiry. Please try again.");
+      }
+    } finally {
+      setBusy(false);
+    }
   }
-  if (reference) return <div className="quote-success"><span className="success-mark"><Check size={30} /></span><h2>{demo ? "Your thoughtful brief looks lovely." : "A thoughtful beginning."}</h2><p>{demo ? "This was a form preview. Your enquiry was not sent or saved, and no one will contact you from this demo. Call our team to discuss your brief." : `Your enquiry has been saved. Your reference is ${reference}. Our team can now review your gifting brief.`}</p>{demo && <div className="contact-numbers">{contactNumbers.map((phone) => <a href={`tel:+91${phone}`} key={phone}>+91 {phone}</a>)}</div>}<button className="button button-outline" onClick={() => setReference("")}>Start another brief <ArrowUpRight size={17} /></button></div>;
+  if (reference) return <div className="quote-success"><span className="success-mark"><Check size={30} /></span><h2>{reference === "DEMO" ? "Your thoughtful brief looks lovely." : "A thoughtful beginning."}</h2><p>{reference === "DEMO" ? "This was a form preview. Your enquiry was not sent or saved, and no one will contact you from this demo. Call our team to discuss your brief." : `Your enquiry has been saved to the database. Your reference is ${reference}. Our team can now review your gifting brief.`}</p>{reference === "DEMO" && <div className="contact-numbers">{contactNumbers.map((phone) => <a href={`tel:+91${phone}`} key={phone}>+91 {phone}</a>)}</div>}<button className="button button-outline" onClick={() => setReference("")}>Start another brief <ArrowUpRight size={17} /></button></div>;
   return <form className="corporate-form" onSubmit={submit}>
-    {demo && <div className="notice"><Send size={18} /><p><strong>Enquiry form preview.</strong> Use sample details. This form is not sent or saved yet. For a real enquiry, <a href="/contact">call our team</a>.</p></div>}
+    {demo && <div className="notice"><Send size={18} /><p><strong>Enquiry form preview.</strong> Use sample details or submit to test database storage. For an urgent enquiry, <a href="/contact">call our team</a>.</p></div>}
     {warning && <p className="form-error" role="alert">{warning}</p>}
     <div className="form-grid">
-      <label className="span-two">Your catalogue selection<select name="product" value={productId} onChange={(event) => { setProductId(event.target.value); const selected = catalogueProducts.find((product) => product.id === event.target.value); if (selected?.cataloguePrice) setBudget(selected.cataloguePrice / 100); }}><option value="">A bespoke collection / not decided yet</option>{catalogueProducts.map((product) => <option value={product.id} key={product.id}>{product.name}</option>)}</select></label>
+      <label className="span-two">Your catalogue selection<select name="product" value={productId} onChange={(event) => { setProductId(event.target.value); const selected = products.find((product) => product.id === event.target.value); if (selected?.cataloguePrice) setBudget(selected.cataloguePrice / 100); }}><option value="">A bespoke collection / not decided yet</option>{products.map((product) => <option value={product.id} key={product.id}>{product.name}</option>)}</select></label>
       <label>Your full name<input name="name" autoComplete="name" placeholder="Full name" required minLength={2} maxLength={100} /></label>
       <label>Company name<input name="company" autoComplete="organization" placeholder="Company or organisation" required minLength={2} maxLength={150} /></label>
       <label>Work email<input name="email" type="email" autoComplete="email" placeholder="you@company.com" required maxLength={254} /></label>
